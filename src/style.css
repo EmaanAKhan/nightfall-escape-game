@@ -1,0 +1,354 @@
+:root {
+    color-scheme: light;
+    font-family: "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: radial-gradient(circle at 45% 20%, rgba(226, 241, 255, 0.98), #c7e0ff 55%, #90bffc 100%);
+    color: #142639;
+    overflow: hidden;
+}
+
+.container {
+    position: fixed;
+    inset: 0;
+}
+
+.webgl {
+    width: 100%;
+    height: 100%;
+    display: block;
+    outline: none;
+    cursor: crosshair;
+}
+
+.loading-bar {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 220px;
+    height: 4px;
+    transform: translate(-50%, -50%) scaleX(0);
+    transform-origin: left;
+    background: linear-gradient(90deg, rgba(53, 116, 219, 0.8), rgba(117, 157, 255, 0.95));
+    box-shadow: 0 0 18px rgba(92, 145, 230, 0.4);
+}
+
+.loading-bar.ended {
+    transition: transform 1s ease;
+    transform: translate(-50%, -50%) scaleX(0);
+}
+
+.top-left-overlay {
+    position: absolute;
+    top: 2.2rem;
+    left: 2.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 0.12rem;
+    font-size: 0.75rem;
+    color: rgba(27, 55, 88, 0.8);
+}
+
+.battery {
+    width: 200px;
+    height: 16px;
+    border: 2px solid rgba(74, 122, 191, 0.85);
+    border-radius: 999px;
+    padding: 2px;
+    background-color: rgba(227, 239, 255, 0.9);
+    box-shadow: inset 0 0 12px rgba(192, 212, 247, 0.9), 0 0 14px rgba(146, 178, 232, 0.45);
+}
+
+.battery-fill {
+    height: 100%;
+    width: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #428ef6, #69b0ff);
+    box-shadow: 0 0 18px rgba(96, 156, 255, 0.45);
+    transition: width 0.3s ease, background 0.3s ease;
+}
+
+.timer {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #1a3556;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+}
+
+.center-prompt {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.3rem;
+    letter-spacing: 0.18rem;
+    text-transform: uppercase;
+    color: #ffffff;
+    text-shadow: 0 0 28px rgba(0, 0, 0, 0.8);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.center-prompt.visible {
+    opacity: 1;
+}
+
+.interaction-prompt {
+    position: absolute;
+    left: 50%;
+    bottom: 35%;
+    transform: translateX(-50%);
+    background: rgba(243, 248, 255, 0.92);
+    border: 1px solid rgba(145, 182, 236, 0.7);
+    border-radius: 8px;
+    padding: 0.65rem 1.4rem;
+    font-size: 0.9rem;
+    letter-spacing: 0.12rem;
+    text-transform: uppercase;
+    color: #163051;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    box-shadow: 0 6px 20px rgba(43, 84, 138, 0.18);
+}
+
+.interaction-prompt.visible {
+    opacity: 1;
+}
+
+.bottom-ui {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 2.5rem;
+    letter-spacing: 0.18rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: rgba(34, 68, 108, 0.85);
+    pointer-events: none;
+}
+
+.riddle-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(225, 236, 255, 0.88);
+    backdrop-filter: blur(6px);
+    z-index: 10;
+}
+
+.riddle-overlay.active {
+    display: flex;
+}
+
+.riddle-content {
+    width: min(420px, 90vw);
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid rgba(123, 163, 226, 0.5);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(221, 234, 255, 0.95));
+    color: #1d3253;
+    box-shadow: 0 0 35px rgba(93, 140, 214, 0.35);
+    text-align: left;
+}
+
+.riddle-content h2 {
+    margin-bottom: 1rem;
+    letter-spacing: 0.18rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #112849;
+}
+
+.riddle-content p {
+    margin-bottom: 1.4rem;
+    line-height: 1.55;
+    color: rgba(34, 64, 104, 0.9);
+}
+
+.riddle-content input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(106, 150, 217, 0.6);
+    background: rgba(242, 248, 255, 0.95);
+    color: #14263c;
+    font-size: 1rem;
+    margin-bottom: 1.2rem;
+}
+
+.riddle-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.riddle-actions button {
+    font-size: 0.85rem;
+    letter-spacing: 0.16rem;
+    text-transform: uppercase;
+    padding: 0.6rem 1.2rem;
+    background: rgba(96, 148, 220, 0.85);
+    border: 1px solid rgba(72, 124, 197, 0.8);
+    border-radius: 999px;
+    color: #f6fbff;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.riddle-actions button:hover {
+    background: rgba(108, 160, 232, 0.92);
+    transform: translateY(-1px);
+}
+
+.death-screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, rgba(222, 233, 249, 0.95), rgba(192, 213, 245, 0.92));
+    z-index: 12;
+    text-align: center;
+    color: #1f314a;
+    letter-spacing: 0.22rem;
+    text-transform: uppercase;
+}
+
+.death-screen.active {
+    display: flex;
+}
+
+.victory-screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, rgba(180, 230, 180, 0.95), rgba(120, 200, 120, 0.92));
+    z-index: 12;
+    text-align: center;
+    color: #0f3d0f;
+    letter-spacing: 0.22rem;
+    text-transform: uppercase;
+}
+
+.victory-screen.active {
+    display: flex;
+}
+
+.victory-content h1 {
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 35px rgba(255, 255, 255, 0.8);
+}
+
+.victory-content p {
+    font-size: 1.2rem;
+    letter-spacing: 0.15rem;
+}
+
+.death-content h1 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    margin-bottom: 2rem;
+    text-shadow: 0 0 35px rgba(255, 255, 255, 0.65);
+}
+
+#restart-button {
+    padding: 0.8rem 2.6rem;
+    border-radius: 999px;
+    border: 1px solid rgba(94, 146, 212, 0.85);
+    background: rgba(119, 168, 231, 0.9);
+    color: #f7fbff;
+    cursor: pointer;
+    letter-spacing: 0.2rem;
+    font-size: 0.9rem;
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+#restart-button:hover {
+    background: rgba(102, 153, 220, 0.92);
+    transform: translateY(-1px);
+}
+
+.instructions {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(229, 240, 255, 0.94);
+    color: #152c48;
+    text-align: center;
+    gap: 0.75rem;
+    letter-spacing: 0.18rem;
+    text-transform: uppercase;
+    z-index: 11;
+    cursor: pointer;
+}
+
+.instructions h1 {
+    font-size: clamp(1.9rem, 4vw, 2.5rem);
+    letter-spacing: 0.3rem;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    color: #0f2440;
+}
+
+.instructions p {
+    font-size: 0.9rem;
+    letter-spacing: 0.18rem;
+}
+
+.rules-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-width: 540px;
+    text-align: left;
+    font-size: 0.82rem;
+    letter-spacing: 0.12rem;
+    text-transform: none;
+    color: #1d314c;
+    margin: 0 auto 1.4rem auto;
+    padding: 0 1rem;
+}
+
+.rules-list li {
+    background: rgba(255, 255, 255, 0.75);
+    border-left: 4px solid rgba(108, 156, 226, 0.9);
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+}
+
+.instructions-tip {
+    font-size: 0.75rem;
+    letter-spacing: 0.2rem;
+    text-transform: uppercase;
+    color: #284162;
+}
+
+.instructions.hidden {
+    display: none;
+}
+
+button {
+    font-family: inherit;
+}

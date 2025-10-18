@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nightfall Escape</title>
+</head>
+
+<body>
+
+    <div class="container">
+        <canvas class="webgl"></canvas>
+        <div class="loading-bar"></div>
+
+        <div class="top-left-overlay">
+            <div class="battery">
+                <div class="battery-fill" id="battery-fill"></div>
+            </div>
+            <div class="timer" id="timer">06:00</div>
+        </div>
+
+        <div class="center-prompt" id="center-prompt"></div>
+        <div class="interaction-prompt" id="interaction-prompt"></div>
+
+        <div class="bottom-ui">
+            <span>Press F to Toggle Flashlight</span>
+            <span>Press E to Interact</span>
+        </div>
+
+        <div class="riddle-overlay" id="riddle-overlay">
+            <div class="riddle-content">
+                <h2 id="riddle-title">Whispers in the Dark</h2>
+                <p id="riddle-question"></p>
+                <input id="riddle-answer" type="text" autocomplete="off" placeholder="Your answer..." />
+                <div class="riddle-actions">
+                    <button id="riddle-submit">Submit</button>
+                    <button id="riddle-close">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="death-screen" id="death-screen">
+            <div class="death-content">
+                <h1>You remain trapped forever.</h1>
+                <button id="restart-button">Restart</button>
+            </div>
+        </div>
+
+        <div class="victory-screen" id="victory-screen">
+            <div class="victory-content">
+                <h1>You've Escaped!</h1>
+                <p>The forest welcomes you. Never look back.</p>
+            </div>
+        </div>
+
+        <div class="instructions" id="instructions">
+            <h1>Daybreak Escape Protocol</h1>
+            <p>Review these rules before you enter:</p>
+            <ul class="rules-list">
+                <li>1. Follow the light. Every room hides a glowing clue.</li>
+                <li>2. Doors stay sealed until the local riddle is solved.</li>
+                <li>3. Keys appear only after you answer correctly.</li>
+                <li>4. Watch your time and battery. Daylight fades quickly.</li>
+                <li>5. Press E near highlighted objects to interact.</li>
+                <li>6. Toggle the flashlight with F if the path dims.</li>
+            </ul>
+            <p class="instructions-tip">Click anywhere to begin. Use WASD to move.</p>
+        </div>
+    </div>
+
+
+</body>
+
+
+</html>
