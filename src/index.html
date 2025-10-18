@@ -22,6 +22,25 @@
 
         <div class="center-prompt" id="center-prompt"></div>
         <div class="interaction-prompt" id="interaction-prompt"></div>
+        
+        <!-- Custom Hallway Riddle -->
+        <div class="hallway-riddle" id="hallway-riddle" style="display: none;">
+            <div class="hallway-riddle-content">
+                <p id="hallway-riddle-text">I melt but never cry.</p>
+                <input id="hallway-riddle-input" type="text" placeholder="Type your answer..." />
+            </div>
+        </div>
+        
+        <!-- Guidelines Overlay -->
+        <div class="guidelines" id="guidelines"></div>
+        
+        <!-- Controls Help -->
+        <div class="controls-help">
+            <div>WASD - Move</div>
+            <div>E - Interact/Possess</div>
+            <div>F - Flashlight</div>
+            <div>V - Camera View</div>
+        </div>
 
         <div class="bottom-ui">
             <span>Press F to Toggle Flashlight</span>
@@ -54,16 +73,19 @@
             </div>
         </div>
 
+        <div class="fade-overlay" id="fade-overlay"></div>
+
         <div class="instructions" id="instructions">
-            <h1>Daybreak Escape Protocol</h1>
-            <p>Review these rules before you enter:</p>
+            <h1>The Haunted Body — Prologue</h1>
+            <p>Review these rules before you awaken:</p>
             <ul class="rules-list">
-                <li>1. Follow the light. Every room hides a glowing clue.</li>
-                <li>2. Doors stay sealed until the local riddle is solved.</li>
-                <li>3. Keys appear only after you answer correctly.</li>
-                <li>4. Watch your time and battery. Daylight fades quickly.</li>
-                <li>5. Press E near highlighted objects to interact.</li>
-                <li>6. Toggle the flashlight with F if the path dims.</li>
+                <li>You are a ghost — you cannot touch, only possess.</li>
+                <li>Every room hides a piece of what you once were.</li>
+                <li>Light reveals truth; darkness conceals it.</li>
+                <li>Solve each riddle to move closer to your body.</li>
+                <li>Press E near glowing objects to interact or possess.</li>
+                <li>The living will not see you, but some will feel you.</li>
+                <li>Collect all body fragments to uncover how you died.</li>
             </ul>
             <p class="instructions-tip">Click anywhere to begin. Use WASD to move.</p>
         </div>

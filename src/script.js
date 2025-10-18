@@ -716,6 +716,86 @@ function registerInteractable(object3d) {
     interactables.push(object3d);
 }
 
+window.spawnHeartFragment = function spawnHeartFragment() {
+    const currentRoom = roomsData[state.activeRoomIndex];
+    if (!currentRoom) return;
+    
+    const heartShape = new THREE.Shape();
+    heartShape.moveTo(0, 0.2);
+    heartShape.bezierCurveTo(0, 0.3, -0.15, 0.3, -0.15, 0.15);
+    heartShape.bezierCurveTo(-0.15, 0, -0.15, -0.1, 0, -0.3);
+    heartShape.bezierCurveTo(0.15, -0.1, 0.15, 0, 0.15, 0.15);
+    heartShape.bezierCurveTo(0.15, 0.3, 0, 0.3, 0, 0.2);
+    
+    const extrudeSettings = { depth: 0.1, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3 };
+    const heartGeometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+    
+    const heart = new THREE.Mesh(
+        heartGeometry,
+        new THREE.MeshStandardMaterial({ 
+            color: 0xFF0000, 
+            emissive: 0xFF0000, 
+            emissiveIntensity: 0.8 
+        })
+    );
+    heart.position.set(0, -currentRoom.size.y / 2 + 1.5, 0);
+    heart.rotation.y = Math.PI;
+    heart.scale.set(3, 3, 3);
+    heart.userData.type = "heart_fragment";
+    heart.userData.prompt = "Press E to collect Heart Fragment";
+    currentRoom.group.add(heart);
+    registerInteractable(heart);
+    
+    const heartLight = new THREE.PointLight(0xFF0000, 1, 5);
+    heartLight.position.set(0, 0.2, 0);
+    heart.add(heartLight);
+    
+    showCenterPrompt("A Heart Fragment appears!", 3);
+}
+
+function transitionToRoom(targetIndex, showTitle = true) {
+    if (typeof targetIndex !== "number") {
+        return false;
+    }
+    if (targetIndex < 0 || targetIndex >= roomsData.length) {
+        return false;
+    }
+    const nextRoom = roomsData[targetIndex];
+    if (!nextRoom) {
+        return false;
+    }
+    playerState.position.set(
+        nextRoom.group.position.x,
+        nextRoom.floorY,
+        nextRoom.group.position.z + 4
+    );
+    previousPlayerPosition.copy(playerState.position);
+    updatePlayerColliderFromState();
+    syncPlayerTransforms();
+    state.activeRoomIndex = targetIndex;
+    if (showTitle) {
+        showCenterPrompt(nextRoom.name, 3);
+    }
+    return true;
+}
+
+function transitionToRoomByName(name, showTitle = true) {
+    if (!name) {
+        return false;
+    }
+    const targetIndex = roomsData.findIndex((room) => {
+        if (!room || !room.group) return false;
+        return room.name === name || room.group.name === name;
+    });
+    if (targetIndex === -1) {
+        return false;
+    }
+    return transitionToRoom(targetIndex, showTitle);
+}
+
+window.__transitionToRoom = transitionToRoom;
+window.__transitionToRoomByName = (name, showTitle = true) => transitionToRoomByName(name, showTitle);
+
 function buildRoom(blueprint, index) {
     const group = new THREE.Group();
     group.name = blueprint.name;
@@ -1387,7 +1467,7 @@ function buildRoom(blueprint, index) {
         group.add(dustParticles);
     }
 
-    // Add glass box with key for ALL rooms
+    // Add glass box (decorative only for hallway)
     const glassBox = new THREE.Mesh(
         new THREE.BoxGeometry(0.6, 0.6, 0.6),
         new THREE.MeshPhysicalMaterial({
@@ -1405,15 +1485,17 @@ function buildRoom(blueprint, index) {
         blueprint.riddlePosition.z
     );
     glassBox.castShadow = true;
-    glassBox.userData = {
-        type: "box",
-        roomIndex: index,
-        range: 3.0,
-        label: "Glass Box",
-        solved: false,
-    };
+    if (index !== 0) {
+        glassBox.userData = {
+            type: "box",
+            roomIndex: index,
+            range: 3.0,
+            label: "Glass Box",
+            solved: false,
+        };
+        registerInteractable(glassBox);
+    }
     group.add(glassBox);
-    registerInteractable(glassBox);
     registerCollisionMesh(glassBox, "Furniture");
 
     // Letter/paper on box
@@ -1429,14 +1511,16 @@ function buildRoom(blueprint, index) {
     letter.rotation.x = -Math.PI / 6;
     group.add(letter);
 
-    // Key inside box (visible from start)
-    key.position.set(
-        glassBox.position.x,
-        glassBox.position.y,
-        glassBox.position.z
-    );
-    key.visible = true;
-    key.userData.active = false;
+    // Key inside box (visible from start, except hallway)
+    if (index !== 0) {
+        key.position.set(
+            glassBox.position.x,
+            glassBox.position.y,
+            glassBox.position.z
+        );
+        key.visible = true;
+        key.userData.active = false;
+    }
 
     const roomData = {
         name: blueprint.name,
@@ -1521,18 +1605,36 @@ const movement = {
 };
 
 function getPromptForInteraction(object3d) {
+    if (!object3d || !object3d.userData) {
+        return "";
+    }
+    if (object3d.userData.enabled === false) {
+        return "";
+    }
+    if (object3d.visible === false) {
+        return "";
+    }
+    if (object3d.userData.prompt) {
+        return object3d.userData.prompt;
+    }
     const type = object3d.userData.type;
+    if (!type) {
+        return "";
+    }
     if (type === "key") {
-        return object3d.userData.active ? "E: Pick up Key" : "";
+        return object3d.userData.active ? "Press E to collect" : "";
     }
     if (type === "door") {
-        return object3d.userData.locked ? "E: Try Door" : "E: Open Door";
+        return object3d.userData.locked ? "Press E to unlock" : "Press E to open";
     }
     if (type === "riddle") {
-        return object3d.userData.solved ? "" : "E: Inspect Relic";
+        return object3d.userData.solved ? "" : "Press E to inspect";
     }
     if (type === "box") {
-        return "E: Read Letter";
+        return "Press E to inspect";
+    }
+    if (type.startsWith("possess_")) {
+        return "Press E to interact";
     }
     return "";
 }
@@ -1557,6 +1659,12 @@ function updateInteractionTarget() {
             return;
         }
         if (type === "box" && item.userData.solved) {
+            return;
+        }
+        if (item.userData.enabled === false) {
+            return;
+        }
+        if (item.visible === false) {
             return;
         }
         tempVec3.setFromMatrixPosition(item.matrixWorld);
@@ -1704,6 +1812,27 @@ function handleInteraction() {
         if (riddleNode) {
             openRiddleOverlay(riddleNode);
         }
+    } else if (type && type.startsWith("possess_")) {
+        if (!interaction.userData.enabled && interaction.userData.enabled !== undefined) {
+            showCenterPrompt(interaction.userData.prompt || "Not available yet", 2);
+            return;
+        }
+        const currentRoom = roomsData[state.activeRoomIndex];
+        if (currentRoom && currentRoom.group.userData.possess) {
+            const result = currentRoom.group.userData.possess(interaction);
+            if (result) {
+                showCenterPrompt(result.message, result.duration);
+                if (result.onEnd) {
+                    setTimeout(result.onEnd, result.duration * 1000);
+                }
+            }
+        }
+    } else if (type === "heart_fragment") {
+        showCenterPrompt("Heart Fragment collected! Transitioning...", 3);
+        interaction.visible = false;
+        setTimeout(() => {
+            transitionToRoom(Math.min(state.activeRoomIndex + 1, roomsData.length - 1));
+        }, 3000);
     }
 }
 
@@ -1715,6 +1844,9 @@ instructionsElement.addEventListener("click", () => {
         return;
     }
     ensureAudioContext();
+    if (!window.audioContext) {
+        window.audioContext = audioContext;
+    }
     startAmbientBed();
     instructionsElement.classList.add("hidden");
     resetPlayerTransform();
@@ -2062,6 +2194,17 @@ function tick() {
         updateTimer(deltaTime);
         updateInteractionTarget();
         updateFlickerLights(elapsedTime);
+        
+        // Hallway updates
+        const currentRoom = roomsData[state.activeRoomIndex];
+        if (currentRoom) {
+            if (currentRoom.group.userData.updateButler) {
+                currentRoom.group.userData.updateButler(deltaTime);
+            }
+            if (currentRoom.group.userData.checkProximity) {
+                currentRoom.group.userData.checkProximity(playerState.position);
+            }
+        }
     }
 
     renderer.render(scene, camera);
