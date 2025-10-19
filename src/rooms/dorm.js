@@ -110,20 +110,40 @@ export function buildDorm(group, size, registerInteractable) {
     group.add(heartLight);
     
     // Ornate chest (final safe) - Bigger and golden
-    const chest = new THREE.Mesh(
-        new THREE.BoxGeometry(2, 1.4, 1.4),
+    const chestGroup = new THREE.Group();
+    chestGroup.position.set(3, -size.y / 2 + 0.7, -3);
+    
+    // Chest body
+    const chestBody = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 0.9, 1.4),
         new THREE.MeshStandardMaterial({ 
             color: 0xFFD700, 
             roughness: 0.2, 
             metalness: 0.9 
         })
     );
-    chest.position.set(3, -size.y / 2 + 0.7, -3);
-    chest.userData.type = "ornate_chest";
-    chest.userData.prompt = "Locked. Find the final key.";
-    chest.userData.locked = true;
-    group.add(chest);
-    registerInteractable(chest);
+    chestBody.position.y = -0.25;
+    chestGroup.add(chestBody);
+    
+    // Chest lid
+    const chestLid = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 0.5, 1.4),
+        new THREE.MeshStandardMaterial({ 
+            color: 0xFFD700, 
+            roughness: 0.2, 
+            metalness: 0.9 
+        })
+    );
+    chestLid.position.set(0, 0.45, -0.7);
+    chestGroup.add(chestLid);
+    
+    chestGroup.userData.type = "ornate_chest";
+    chestGroup.userData.prompt = "Locked. Find the final key.";
+    chestGroup.userData.locked = true;
+    group.add(chestGroup);
+    registerInteractable(chestGroup);
+    
+    const chest = chestGroup;
     
     // Golden decorations on chest
     const chestLock = new THREE.Mesh(
@@ -132,6 +152,33 @@ export function buildDorm(group, size, registerInteractable) {
     );
     chestLock.position.set(3, -size.y / 2 + 0.7, -2.3);
     group.add(chestLock);
+    
+    // Chest glow light
+    const chestGlowLight = new THREE.PointLight(0xFFD700, 0, 8);
+    chestGlowLight.position.set(3, -size.y / 2 + 0.7, -3);
+    group.add(chestGlowLight);
+    
+    // Key inside chest
+    const chestKey = new THREE.Group();
+    const chestKeyShaft = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 0.7, 8),
+        new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.9, emissive: 0xFFD700, emissiveIntensity: 0.5 })
+    );
+    chestKeyShaft.rotation.z = Math.PI / 2;
+    chestKey.add(chestKeyShaft);
+    const chestKeyBow = new THREE.Mesh(
+        new THREE.TorusGeometry(0.12, 0.04, 8, 16),
+        new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.9, emissive: 0xFFD700, emissiveIntensity: 0.5 })
+    );
+    chestKeyBow.position.x = -0.35;
+    chestKey.add(chestKeyBow);
+    chestKey.position.set(0, 0.3, 0);
+    chestKey.visible = false;
+    chestGroup.add(chestKey);
+    
+    const chestKeyLight = new THREE.PointLight(0xFFD700, 1, 3);
+    chestKeyLight.position.set(0, 0.1, 0);
+    chestKey.add(chestKeyLight);
     
     // Desk with scattered letters
     const desk = new THREE.Mesh(
@@ -191,44 +238,78 @@ export function buildDorm(group, size, registerInteractable) {
     );
     mirror.position.set(-size.x / 2 + 0.08, 0.5, 0);
     mirror.rotation.y = Math.PI / 2;
-    mirror.userData.type = "cracked_mirror";
-    mirror.userData.prompt = "The mirror awaits...";
-    mirror.userData.enabled = false;
     group.add(mirror);
-    registerInteractable(mirror);
+    
+    // Invisible interaction box in front of mirror
+    const mirrorInteraction = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 2, 1.5),
+        new THREE.MeshBasicMaterial({ visible: false })
+    );
+    mirrorInteraction.position.set(-size.x / 2 + 1, 0.5, 0);
+    mirrorInteraction.userData.type = "cracked_mirror";
+    mirrorInteraction.userData.prompt = "The mirror awaits...";
+    group.add(mirrorInteraction);
+    registerInteractable(mirrorInteraction);
     
     // HUGE white ivory bed on back wall
+    // Bed legs
+    const bedLegPositions = [
+        [-2.2, size.z / 2 - 2.8],
+        [2.2, size.z / 2 - 2.8],
+        [-2.2, size.z / 2 - 0.4],
+        [2.2, size.z / 2 - 0.4]
+    ];
+    bedLegPositions.forEach(([x, z]) => {
+        const leg = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.1, 0.12, 0.5, 8),
+            new THREE.MeshStandardMaterial({ color: 0xE8DCC8, roughness: 0.6 })
+        );
+        leg.position.set(x, -size.y / 2 + 0.25, z);
+        group.add(leg);
+    });
+    
+    // Bed frame base
     const bedFrame = new THREE.Mesh(
-        new THREE.BoxGeometry(5, 0.5, 3),
-        new THREE.MeshStandardMaterial({ color: 0xFFFFF0, roughness: 0.7 })
+        new THREE.BoxGeometry(5, 0.15, 2.6),
+        new THREE.MeshStandardMaterial({ color: 0xE8DCC8, roughness: 0.6 })
     );
-    bedFrame.position.set(0, -size.y / 2 + 0.25, size.z / 2 - 1.6);
+    bedFrame.position.set(0, -size.y / 2 + 0.5, size.z / 2 - 1.6);
     group.add(bedFrame);
     
+    // Mattress
     const mattress = new THREE.Mesh(
-        new THREE.BoxGeometry(4.8, 0.6, 2.8),
-        new THREE.MeshStandardMaterial({ color: 0xFFFFF0, roughness: 0.8 })
+        new THREE.BoxGeometry(4.6, 0.4, 2.4),
+        new THREE.MeshStandardMaterial({ color: 0xFFB366, roughness: 0.8 })
     );
-    mattress.position.set(0, -size.y / 2 + 0.65, size.z / 2 - 1.6);
+    mattress.position.set(0, -size.y / 2 + 0.68, size.z / 2 - 1.6);
     group.add(mattress);
     
     // Headboard
     const headboard = new THREE.Mesh(
-        new THREE.BoxGeometry(5, 2, 0.3),
-        new THREE.MeshStandardMaterial({ color: 0xFFFFF0, roughness: 0.7 })
+        new THREE.BoxGeometry(5, 1.8, 0.15),
+        new THREE.MeshStandardMaterial({ color: 0xE8DCC8, roughness: 0.6 })
     );
-    headboard.position.set(0, -size.y / 2 + 1.5, size.z / 2 - 0.15);
+    headboard.position.set(0, -size.y / 2 + 1.4, size.z / 2 - 0.3);
     group.add(headboard);
     
     // Pillows
     for (let i = 0; i < 3; i++) {
         const pillow = new THREE.Mesh(
-            new THREE.BoxGeometry(0.8, 0.3, 0.5),
-            new THREE.MeshStandardMaterial({ color: 0xFFFFF0, roughness: 0.9 })
+            new THREE.BoxGeometry(0.7, 0.25, 0.4),
+            new THREE.MeshStandardMaterial({ color: 0xFFB366, roughness: 0.9 })
         );
-        pillow.position.set((i - 1) * 1.5, -size.y / 2 + 1.1, size.z / 2 - 1);
+        pillow.position.set((i - 1) * 1.4, -size.y / 2 + 0.95, size.z / 2 - 0.7);
+        pillow.rotation.x = -0.2;
         group.add(pillow);
     }
+    
+    // Blanket
+    const blanket = new THREE.Mesh(
+        new THREE.BoxGeometry(4.4, 0.1, 1.8),
+        new THREE.MeshStandardMaterial({ color: 0xFF9944, roughness: 0.9 })
+    );
+    blanket.position.set(0, -size.y / 2 + 0.9, size.z / 2 - 2);
+    group.add(blanket);
     
     // Final key (materializes after heart merge)
     const finalKey = new THREE.Group();
@@ -327,7 +408,38 @@ export function buildDorm(group, size, registerInteractable) {
     group.add(spotLight);
     group.add(spotLight.target);
     
-    // Speech synthesis helper
+    const dormState = {
+        shownMessages: new Set(),
+        roomEnterTime: Date.now()
+    };
+    
+    function showHint(text, duration = 8000, key = null) {
+        if (key && dormState.shownMessages.has(key)) return;
+        
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.7;
+            utterance.pitch = 0.6;
+            utterance.volume = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        if (window.showCenterPrompt) {
+            window.showCenterPrompt(text, duration / 1000);
+        }
+        
+        if (key) dormState.shownMessages.add(key);
+    }
+    
+    function updateDormHints(deltaTime) {
+        const timeSinceEnter = (Date.now() - dormState.roomEnterTime) / 1000;
+        
+        if (timeSinceEnter > 1 && !dormState.shownMessages.has('allLines')) {
+            showHint("The heart beats only for the one who dares to remember. Seek the key that death refused to hold. Only then may breath return to silence.", 11000, 'allLines');
+        }
+    }
+    
+    // Speech synthesis helper for interactions
     function speakText(text) {
         if ('speechSynthesis' in window) {
             const utterance = new SpeechSynthesisUtterance(text);
@@ -338,63 +450,33 @@ export function buildDorm(group, size, registerInteractable) {
         }
     }
     
-    // Room entry event
-    group.userData.onRoomEnter = function() {
-        if (window.showCenterPrompt) {
-            window.showCenterPrompt("The Private Chamber", 3);
-        }
-        
-        setTimeout(() => {
-            const text = "The chamber awaits the truth you buried.";
-            if (window.showCenterPrompt) {
-                window.showCenterPrompt(text, 8);
-            }
-            speakText(text);
-        }, 3500);
-        
-        setTimeout(() => {
-            const text = "Find the heart. Reclaim the name.";
-            if (window.showCenterPrompt) {
-                window.showCenterPrompt(text, 8);
-            }
-            speakText(text);
-        }, 12000);
-    };
-    
     // Interaction logic
     group.userData.interact = function(object) {
+        console.log("DORM INTERACT CALLED", object.userData.type);
         const type = object.userData.type;
         
-        if (type === "heart_relic" && !chamberState.heartMerged) {
-            chamberState.heartMerged = true;
-            
-            // Heart merge animation
-            heartRelic.material.emissiveIntensity = 1.5;
-            heartLight.intensity = 3;
-            
-            const text = "The heart beats again. You remember your name.";
-            if (window.showCenterPrompt) {
-                window.showCenterPrompt(text, 8);
+        if (type === "heart_relic") {
+            console.log("Heart relic interaction, merged:", chamberState.heartMerged);
+            if (!chamberState.heartMerged) {
+                chamberState.heartMerged = true;
+                
+                // Heart merge animation
+                heartRelic.scale.set(2.5, 2.5, 2.5);
+                heartRelic.material.emissiveIntensity = 2.5;
+                heartLight.intensity = 5;
+                
+                showHint("The heart beats again. You remember your name.", 8000, null);
+                
+                // Reveal final letter
+                setTimeout(() => {
+                    finalLetter.visible = true;
+                    showHint("A letter appears revealing the truth of your death.", 8000);
+                }, 3000);
+                
+                return { duration: 3, message: "" };
+            } else {
+                return { duration: 0, message: "Already merged" };
             }
-            speakText(text);
-            
-            // Reveal final key
-            setTimeout(() => {
-                finalKey.visible = true;
-                const keyText = "The lock that killed you now seeks to open itself.";
-                if (window.showCenterPrompt) {
-                    window.showCenterPrompt(keyText, 8);
-                }
-                speakText(keyText);
-                chamberState.keyRevealed = true;
-            }, 3000);
-            
-            // Reveal final letter
-            setTimeout(() => {
-                finalLetter.visible = true;
-            }, 5000);
-            
-            return { duration: 3, message: "Merging heart fragment..." };
         }
         
         if (type === "final_key" && chamberState.keyRevealed) {
@@ -414,34 +496,56 @@ export function buildDorm(group, size, registerInteractable) {
         if (type === "final_letter" && chamberState.heartMerged) {
             chamberState.letterRead = true;
             
-            const letterText = "My Dearest — You should not have returned here. I wrote your name out of the will because you were already gone. The poison was mine, but the guilt was yours. We built this mansion from secrets — each room another lie we told ourselves. And now, you stand where your heart last beat. Forgive me… or finish what we began.";
+            const letterText = "They needed the property. The estate was worth more than your life. The poison was slipped into your evening tea by someone you trusted. Someone powerful. Someone who now walks free while you wander these halls. The deed was signed the day after your death. They took everything.";
             speakText(letterText);
             
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000;';
             
             const popup = document.createElement('div');
-            popup.style.cssText = 'background: #D2B48C; border: 3px solid #8B4513; padding: 30px; max-width: 600px; max-height: 400px; overflow-y: auto;';
-            popup.innerHTML = '<div style="color: #000; font-family: serif; font-size: 18px; line-height: 1.8;"><strong>Final Letter</strong><br><br>My Dearest —<br><br>You should not have returned here.<br>I wrote your name out of the will because you were already gone.<br>The poison was mine, but the guilt was yours.<br>We built this mansion from secrets — each room another lie we told ourselves.<br><br>And now, you stand where your heart last beat.<br><br>Forgive me… or finish what we began.<br><br><span style="font-size: 14px; color: #666;">[Press E to close]</span></div>';
+            popup.style.cssText = 'background: #D2B48C; border: 3px solid #8B4513; padding: 30px; max-width: 600px;';
+            popup.innerHTML = '<div style="color: #000; font-family: serif; font-size: 18px; line-height: 1.8;"><strong>The Truth of Your Death</strong><br><br>They needed the property.<br>The estate was worth more than your life.<br>The poison was slipped into your evening tea by someone you trusted. Someone powerful.<br>Someone who now walks free while you wander these halls.<br>The deed was signed the day after your death.<br>They took everything.<br><br><span style="font-size: 14px; color: #666;">[Press Enter to close]</span></div>';
             overlay.appendChild(popup);
             document.body.appendChild(overlay);
             
             const closeHandler = (e) => {
-                if (e.key === 'e' || e.key === 'E' || e.key === 'Escape') {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
                     window.speechSynthesis.cancel();
                     document.body.removeChild(overlay);
                     document.removeEventListener('keydown', closeHandler);
+                    finalLetter.visible = false;
                     
-                    // Activate mirror
-                    mirror.userData.enabled = true;
+                    // Unlock chest with glow
+                    chest.userData.locked = false;
+                    chest.userData.prompt = "Press E to open the chest";
+                    chestBody.material.emissive = new THREE.Color(0xFFD700);
+                    chestBody.material.emissiveIntensity = 0.5;
+                    chestGlowLight.intensity = 2;
                     mirror.material.emissiveIntensity = 0.3;
-                    mirror.userData.prompt = "Press E to face the truth";
                     
-                    const mirrorText = "The mirror calls to you.";
-                    if (window.showCenterPrompt) {
-                        window.showCenterPrompt(mirrorText, 8);
-                    }
-                    speakText(mirrorText);
+                    // First message
+                    const msg1 = "The chest unlocks. Your truth has been revealed.";
+                    const utterance1 = new SpeechSynthesisUtterance(msg1);
+                    utterance1.rate = 0.7;
+                    utterance1.pitch = 0.6;
+                    utterance1.volume = 0.9;
+                    
+                    utterance1.onend = () => {
+                        // Second message after first completes
+                        const msg2 = "The mirror calls to you.";
+                        const utterance2 = new SpeechSynthesisUtterance(msg2);
+                        utterance2.rate = 0.7;
+                        utterance2.pitch = 0.6;
+                        utterance2.volume = 0.9;
+                        window.speechSynthesis.speak(utterance2);
+                        window.showCenterPrompt(msg2, 8);
+                        mirrorInteraction.userData.prompt = "Press E. The mirror awaits...";
+                    };
+                    
+                    window.speechSynthesis.speak(utterance1);
+                    window.showCenterPrompt(msg1, 8);
                 }
             };
             document.addEventListener('keydown', closeHandler);
@@ -450,43 +554,40 @@ export function buildDorm(group, size, registerInteractable) {
         }
         
         if (type === "ornate_chest" && !chest.userData.locked) {
-            const text = "The chest opens. Your journey ends here.";
-            if (window.showCenterPrompt) {
-                window.showCenterPrompt(text, 8);
-            }
-            speakText(text);
+            // Open chest lid animation
+            chestLid.rotation.x = -Math.PI / 2.5;
+            chestKey.visible = true;
+            showHint("The chest opens. A key lies within.", 8000);
             
-            // Trigger victory or next sequence
+            // Show ending choice message
             setTimeout(() => {
-                if (window.showCenterPrompt) {
-                    window.showCenterPrompt("You have found the truth.", 5);
-                }
+                showHint("Decide your ending — redemption or rebirth through corruption — the mirror or the key?", 12000);
+                mirrorInteraction.userData.prompt = "Press E. The mirror awaits...";
             }, 3000);
             
-            return { duration: 3, message: "Opening the chest..." };
+            return { duration: 3, message: "" };
         }
         
-        if (type === "cracked_mirror" && chamberState.letterRead) {
-            chamberState.mirrorActivated = true;
-            
-            const text = "She poured the poison. But you raised the glass. You both wanted the silence.";
-            if (window.showCenterPrompt) {
-                window.showCenterPrompt(text, 12);
+        if (type === "cracked_mirror") {
+            if (chamberState.letterRead) {
+                window.changeRoom('Basement');
+                return { duration: 0, message: "" };
+            } else {
+                return { duration: 0, message: "Read the letter first" };
             }
-            speakText(text);
-            
-            setTimeout(() => {
-                const choiceText = "Approach the heart to forgive. Approach the mirror to possess.";
-                if (window.showCenterPrompt) {
-                    window.showCenterPrompt(choiceText, 10);
-                }
-                speakText(choiceText);
-            }, 12000);
-            
-            return { duration: 5, message: "The mirror reveals the truth..." };
         }
         
         return null;
+    };
+    
+    group.userData.updateDorm = function(deltaTime) {
+        updateDormHints(deltaTime);
+    };
+    
+    // Reset room enter time when entering
+    group.userData.onEnter = function() {
+        dormState.roomEnterTime = Date.now();
+        dormState.shownMessages.clear();
     };
     
     console.log("Private Chamber built successfully");

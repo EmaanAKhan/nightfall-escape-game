@@ -176,7 +176,7 @@ export function buildChairmanOffice(group, size, registerInteractable) {
         
         // Initial hint
         if (timeSinceEnter > 2 && !officeState.shownGuidelines.has('initial')) {
-            showHint("He guards that pot like it holds his sins. Search the room — something will make him leave.", 8000, 'initial');
+            showHint("He guards that pot like it holds his sins. Search the room something will make him leave.", 8000, 'initial');
         }
         
         // Idle hint after 10s
@@ -773,9 +773,9 @@ export function buildChairmanOffice(group, size, registerInteractable) {
 
     // CHEF ANIMATION
     const chefPatrolPoints = [
-        new THREE.Vector3(-3, 0, -2.5),
-        new THREE.Vector3(-1, 0, -2.5),
-        new THREE.Vector3(-0.5, 0, -2.5)
+        new THREE.Vector3(-3, -size.y / 2 + 0.9, -1.5),
+        new THREE.Vector3(-1, -size.y / 2 + 0.9, -1.5),
+        new THREE.Vector3(-0.5, -size.y / 2 + 0.9, -1.5)
     ];
     let chefTime = 0;
     
@@ -801,9 +801,9 @@ export function buildChairmanOffice(group, size, registerInteractable) {
         if (officeState.chefDistracted) {
             chefTime += deltaTime * 2;
             chef.position.set(
-                Math.sin(chefTime) * 2,
+                Math.sin(chefTime) * 2 + 1,
                 -size.y / 2 + 0.9,
-                Math.cos(chefTime) * 2
+                Math.cos(chefTime) * 2 + 1
             );
             chefLabel.position.set(chef.position.x, -size.y / 2 + 3.2, chef.position.z);
         } else {

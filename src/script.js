@@ -797,6 +797,7 @@ window.__transitionToRoom = transitionToRoom;
 window.__transitionToRoomByName = (name, showTitle = true) => transitionToRoomByName(name, showTitle);
 window.showCenterPrompt = showCenterPrompt;
 window.transitionToRoom = transitionToRoomByName;
+window.changeRoom = transitionToRoomByName;
 window.state = state;
 
 // Checklist functionality
@@ -1873,6 +1874,14 @@ function handleInteraction() {
         setTimeout(() => {
             transitionToRoom(Math.min(state.activeRoomIndex + 1, roomsData.length - 1));
         }, 3000);
+    } else if (type === "heart_relic" || type === "final_key" || type === "final_letter" || type === "ornate_chest" || type === "cracked_mirror") {
+        const currentRoom = roomsData[state.activeRoomIndex];
+        if (currentRoom && currentRoom.group.userData.interact) {
+            const result = currentRoom.group.userData.interact(interaction);
+            if (result && result.message) {
+                showCenterPrompt(result.message, result.duration);
+            }
+        }
     }
 }
 
@@ -1940,6 +1949,11 @@ function startGameAtRoom(roomIndex) {
         
         // Show room name
         showCenterPrompt(targetRoom.name, 3);
+        
+        // Call onEnter if it exists
+        if (targetRoom.group.userData.onEnter) {
+            targetRoom.group.userData.onEnter();
+        }
         
         // Chairman's Office will handle its own hints via the room's hint system
         
@@ -2235,10 +2249,16 @@ function enforceDoorLogic(playerHeadPosition) {
         if (!data.locked && data.nextRoomIndex !== null) {
             if (distance < 1 && playerHeadPosition.z < tempVec3.z - 0.4) {
                 if (state.activeRoomIndex !== data.nextRoomIndex) {
+                    const previousRoomIndex = state.activeRoomIndex;
                     state.activeRoomIndex = data.nextRoomIndex;
                     if (!roomsData[state.activeRoomIndex].visited) {
                         roomsData[state.activeRoomIndex].visited = true;
                         showCenterPrompt(roomsData[state.activeRoomIndex].name, 3);
+                    }
+                    // Call onEnter if it exists
+                    const newRoom = roomsData[state.activeRoomIndex];
+                    if (newRoom && newRoom.group.userData.onEnter) {
+                        newRoom.group.userData.onEnter();
                     }
                 }
             }
@@ -2361,6 +2381,12 @@ function tick() {
             }
             if (currentRoom.group.userData.checkProximity) {
                 currentRoom.group.userData.checkProximity(playerState.position);
+            }
+            if (currentRoom.group.userData.updateChef) {
+                currentRoom.group.userData.updateChef(deltaTime);
+            }
+            if (currentRoom.group.userData.updateDorm) {
+                currentRoom.group.userData.updateDorm(deltaTime);
             }
         }
     }
