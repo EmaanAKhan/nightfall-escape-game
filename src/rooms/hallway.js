@@ -94,10 +94,10 @@ function playDramaticSound(type) {
     }
 }
 
-export function buildHallway(group, size, registerInteractable) {
-    console.log("Building hallway...");
+export function buildBasement(group, size, registerInteractable) {
+    console.log("Building basement...");
     
-    const hallwayState = {
+    const basementState = {
         candlesLit: [false, false, false],
         riddleSolved: false,
         keyDropped: false,
@@ -107,8 +107,8 @@ export function buildHallway(group, size, registerInteractable) {
     };
     
     // UI Elements
-    const hallwayRiddle = document.getElementById('hallway-riddle');
-    const hallwayRiddleInput = document.getElementById('hallway-riddle-input');
+    const basementRiddle = document.getElementById('basement-riddle');
+    const basementRiddleInput = document.getElementById('basement-riddle-input');
     const guidelines = document.getElementById('guidelines');
     
     let currentGuidelineTimeout = null;
@@ -116,10 +116,20 @@ export function buildHallway(group, size, registerInteractable) {
     // Guidelines Manager
     function showGuideline(text, duration = 7000, key = null) {
         if (!guidelines) return;
-        if (key && hallwayState.shownGuidelines.has(key)) return;
+        if (key && basementState.shownGuidelines.has(key)) return;
         
         if (currentGuidelineTimeout) {
             clearTimeout(currentGuidelineTimeout);
+        }
+        
+        // Speak the guideline with husky voice
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 0.7;
+            utterance.volume = 0.9;
+            window.speechSynthesis.speak(utterance);
         }
         
         guidelines.classList.remove('active');
@@ -127,7 +137,7 @@ export function buildHallway(group, size, registerInteractable) {
             guidelines.textContent = text;
             guidelines.classList.add('active');
             
-            if (key) hallwayState.shownGuidelines.add(key);
+            if (key) basementState.shownGuidelines.add(key);
             
             currentGuidelineTimeout = setTimeout(() => {
                 guidelines.classList.remove('active');
@@ -137,34 +147,34 @@ export function buildHallway(group, size, registerInteractable) {
     
     // Riddle UI
     function showRiddle() {
-        if (hallwayRiddle) {
+        if (basementRiddle) {
             console.log("Showing riddle");
-            hallwayRiddle.style.display = 'block';
-            setTimeout(() => hallwayRiddle.classList.add('active'), 50);
-            if (hallwayRiddleInput) {
-                hallwayRiddleInput.value = '';
-                hallwayRiddleInput.focus();
+            basementRiddle.style.display = 'block';
+            setTimeout(() => basementRiddle.classList.add('active'), 50);
+            if (basementRiddleInput) {
+                basementRiddleInput.value = '';
+                basementRiddleInput.focus();
             }
         }
     }
     
     function hideRiddle() {
-        if (hallwayRiddle) {
-            hallwayRiddle.classList.remove('active');
-            setTimeout(() => hallwayRiddle.style.display = 'none', 500);
+        if (basementRiddle) {
+            basementRiddle.classList.remove('active');
+            setTimeout(() => basementRiddle.style.display = 'none', 500);
         }
     }
     
     // Riddle submission
-    if (hallwayRiddleInput) {
-        hallwayRiddleInput.addEventListener('keydown', (e) => {
+    if (basementRiddleInput) {
+        basementRiddleInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                const answer = hallwayRiddleInput.value.trim().toLowerCase();
+                const answer = basementRiddleInput.value.trim().toLowerCase();
                 console.log("Riddle answer:", answer);
                 if (answer === 'candle') {
                     playDramaticSound('riddle_solve');
                     hideRiddle();
-                    hallwayState.riddleSolved = true;
+                    basementState.riddleSolved = true;
                     pendulum.userData.enabled = true;
                     pendulum.userData.prompt = "Press E to possess pendulum";
                     showGuideline("Clever… time wants to move now.", 7000, 'riddle_solved');
@@ -172,8 +182,8 @@ export function buildHallway(group, size, registerInteractable) {
                         showGuideline("Something nearby just changed. The clock… it's alive again.", 7000, 'clock_active');
                     }, 7500);
                 } else {
-                    hallwayRiddle.classList.add('shake');
-                    setTimeout(() => hallwayRiddle.classList.remove('shake'), 500);
+                    basementRiddle.classList.add('shake');
+                    setTimeout(() => basementRiddle.classList.remove('shake'), 500);
                 }
             }
         });
@@ -380,12 +390,12 @@ export function buildHallway(group, size, registerInteractable) {
     clockLabel.position.set(size.x / 2 - 0.8, -size.y / 2 + 4.2, 0);
     group.add(clockLabel);
     
-    // KEY - realistic design near clock
+    // KEY - bigger and more key-shaped
     const keyGroup = new THREE.Group();
     
-    // Key shaft
+    // Key shaft (longer)
     const keyShaft = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.03, 0.03, 0.5, 8),
+        new THREE.CylinderGeometry(0.05, 0.05, 1.0, 8),
         new THREE.MeshStandardMaterial({ 
             color: 0xB8860B, 
             roughness: 0.3, 
@@ -395,38 +405,39 @@ export function buildHallway(group, size, registerInteractable) {
     keyShaft.rotation.z = Math.PI / 2;
     keyGroup.add(keyShaft);
     
-    // Key bow (handle)
+    // Key bow (handle) - bigger
     const keyBow = new THREE.Mesh(
-        new THREE.TorusGeometry(0.08, 0.02, 8, 16),
+        new THREE.TorusGeometry(0.15, 0.04, 8, 16),
         new THREE.MeshStandardMaterial({ 
             color: 0xB8860B, 
             roughness: 0.3, 
             metalness: 0.9
         })
     );
-    keyBow.position.x = -0.25;
+    keyBow.position.x = -0.5;
     keyGroup.add(keyBow);
     
-    // Key teeth
-    for (let i = 0; i < 3; i++) {
+    // Key teeth - more prominent
+    for (let i = 0; i < 4; i++) {
         const tooth = new THREE.Mesh(
-            new THREE.BoxGeometry(0.04, 0.06, 0.02),
+            new THREE.BoxGeometry(0.08, 0.12, 0.04),
             new THREE.MeshStandardMaterial({ 
                 color: 0xB8860B, 
                 roughness: 0.3, 
                 metalness: 0.9
             })
         );
-        tooth.position.set(0.15 + i * 0.05, -0.03, 0);
+        tooth.position.set(0.3 + i * 0.1, -0.06, 0);
         keyGroup.add(tooth);
     }
     
-    keyGroup.position.set(size.x / 2 - 1.2, -size.y / 2 + 0.02, 0.3);
+    keyGroup.position.set(-3, -size.y / 2 + 0.02, 2);
     keyGroup.rotation.y = Math.PI / 4;
+    keyGroup.scale.set(1.5, 1.5, 1.5);
     keyGroup.name = "fallen_key";
     keyGroup.userData.type = "key_pickup";
-    keyGroup.userData.prompt = "Only the living can pick this up";
-    keyGroup.userData.enabled = false;
+    keyGroup.userData.prompt = "You cannot pick up the key. Possess the butler to pick it up.";
+    keyGroup.userData.enabled = true;
     keyGroup.visible = false;
     group.add(keyGroup);
     registerInteractable(keyGroup);
@@ -447,9 +458,76 @@ export function buildHallway(group, size, registerInteractable) {
     const keyLabelTexture = new THREE.CanvasTexture(keyLabelCanvas);
     const keyLabel = new THREE.Sprite(new THREE.SpriteMaterial({ map: keyLabelTexture, transparent: true }));
     keyLabel.scale.set(2, 0.5, 1);
-    keyLabel.position.set(size.x / 2 - 1.2, -size.y / 2 + 0.8, 0.3);
+    keyLabel.position.set(-3, -size.y / 2 + 0.8, 2);
     keyLabel.visible = false;
     group.add(keyLabel);
+    
+    // BURNT LETTER - spawns with key
+    const letterGroup = new THREE.Group();
+    
+    // Burnt paper mesh
+    const letterPaper = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.3, 0.4),
+        new THREE.MeshStandardMaterial({ 
+            color: 0x8B7355,
+            roughness: 0.9,
+            emissive: 0xFF6600,
+            emissiveIntensity: 0.1
+        })
+    );
+    letterPaper.rotation.x = -Math.PI / 2 + 0.1;
+    letterGroup.add(letterPaper);
+    
+    // Burnt edges effect
+    const burntEdge = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.32, 0.42),
+        new THREE.MeshStandardMaterial({ 
+            color: 0x2A1810,
+            transparent: true,
+            opacity: 0.3,
+            roughness: 1
+        })
+    );
+    burntEdge.rotation.x = -Math.PI / 2 + 0.1;
+    burntEdge.position.y = 0.001;
+    letterGroup.add(burntEdge);
+    
+    letterGroup.position.set(3, -size.y / 2 + 0.02, 2);
+    letterGroup.rotation.y = Math.random() * 0.2 - 0.1;
+    letterGroup.name = "letter_01_hallway";
+    letterGroup.userData.type = "letter_read";
+    letterGroup.userData.prompt = "Press E to read the letter";
+    letterGroup.userData.enabled = false;
+    letterGroup.visible = false;
+    group.add(letterGroup);
+    registerInteractable(letterGroup);
+    
+    // Letter hover animation
+    let letterTime = 0;
+    letterGroup.userData.updateLetter = function(deltaTime) {
+        letterTime += deltaTime * 2;
+        letterGroup.position.y = -size.y / 2 + 0.02 + Math.sin(letterTime) * 0.05;
+    };
+    
+    // Letter label
+    const letterLabelCanvas = document.createElement('canvas');
+    const letterCtx = letterLabelCanvas.getContext('2d');
+    letterLabelCanvas.width = 512;
+    letterLabelCanvas.height = 128;
+    letterCtx.font = 'bold 56px serif';
+    letterCtx.fillStyle = '#FFFFFF';
+    letterCtx.strokeStyle = '#000000';
+    letterCtx.lineWidth = 4;
+    letterCtx.textAlign = 'center';
+    letterCtx.textBaseline = 'middle';
+    letterCtx.strokeText('Burnt Letter', 256, 64);
+    letterCtx.fillText('Burnt Letter', 256, 64);
+    const letterLabelTexture = new THREE.CanvasTexture(letterLabelCanvas);
+    const letterLabel = new THREE.Sprite(new THREE.SpriteMaterial({ map: letterLabelTexture, transparent: true }));
+    letterLabel.scale.set(2, 0.5, 1);
+    letterLabel.position.set(3, -size.y / 2 + 0.8, 2);
+    letterLabel.visible = false;
+    group.add(letterLabel);
     
     // DOOR
     const doorPivot = new THREE.Group();
@@ -492,8 +570,8 @@ export function buildHallway(group, size, registerInteractable) {
     butlerGroup.add(butlerHead);
     butlerGroup.position.set(0, 0, 4);
     butlerGroup.userData.type = "possess_butler";
-    butlerGroup.userData.prompt = "Collect the key first";
-    butlerGroup.userData.enabled = false;
+    butlerGroup.userData.prompt = "Press E to possess butler";
+    butlerGroup.userData.enabled = true;
     group.add(butlerGroup);
     registerInteractable(butlerGroup);
     
@@ -518,6 +596,112 @@ export function buildHallway(group, size, registerInteractable) {
     
 
     
+    // Voice synthesis function
+    function speak(text) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 0.7;
+            utterance.volume = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+    
+    // LETTER READING LOGIC
+    group.userData.interact = function(object) {
+        const type = object.userData.type;
+        
+        if (type === "letter_read") {
+            playDramaticSound('key_pickup');
+            
+            // Mark letter as read in checklist
+            if (window.markChecklistItem) {
+                window.markChecklistItem('read-letter');
+            }
+            
+            const letterText = "You've entered a place of shadows. Those who come here seeking truth often find only silence. Find out how you died. The truth is buried with the ashes.";
+            speak(letterText);
+            
+            // Show letter popup
+            const overlay = document.createElement('div');
+            overlay.id = 'letter-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.4);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.5s;
+            `;
+            
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+                background: #D2B48C;
+                border: 3px solid #8B4513;
+                border-radius: 10px;
+                padding: 30px;
+                max-width: 600px;
+                box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            `;
+            
+            const textDiv = document.createElement('div');
+            textDiv.style.cssText = `
+                color: #000000;
+                font-family: serif;
+                font-size: 18px;
+                line-height: 1.8;
+                text-align: center;
+            `;
+            textDiv.innerHTML = `
+                You've entered a place of shadows.<br><br>
+                Those who come here seeking truth often find only silence.<br><br>
+                Find out how you died.<br><br>
+                The truth is buried with the ashes.
+            `;
+            
+            const closeHint = document.createElement('div');
+            closeHint.style.cssText = `
+                margin-top: 20px;
+                color: #666;
+                font-size: 14px;
+                text-align: center;
+            `;
+            closeHint.textContent = "Press E, ESC, or SPACE to close";
+            
+            popup.appendChild(textDiv);
+            popup.appendChild(closeHint);
+            overlay.appendChild(popup);
+            document.body.appendChild(overlay);
+            
+            setTimeout(() => overlay.style.opacity = '1', 50);
+            
+            // Close handler
+            const closeHandler = (e) => {
+                if (e.key === 'e' || e.key === 'E' || e.key === 'Escape' || e.key === ' ') {
+                    window.speechSynthesis.cancel();
+                    overlay.style.opacity = '0';
+                    setTimeout(() => {
+                        document.body.removeChild(overlay);
+                        letterGroup.visible = false;
+                        letterLabel.visible = false;
+                    }, 500);
+                    document.removeEventListener('keydown', closeHandler);
+                }
+            };
+            document.addEventListener('keydown', closeHandler);
+            
+            return { duration: 2, message: "Reading letter..." };
+        }
+        
+        return null;
+    };
+    
     // POSSESSION LOGIC
     group.userData.possess = function(object) {
         const type = object.userData.type;
@@ -525,20 +709,20 @@ export function buildHallway(group, size, registerInteractable) {
         
         if (type === "possess_candle") {
             const idx = object.userData.candleIndex;
-            if (!hallwayState.candlesLit[idx]) {
+            if (!basementState.candlesLit[idx]) {
                 playDramaticSound('candle_light');
-                hallwayState.candlesLit[idx] = true;
+                basementState.candlesLit[idx] = true;
                 candles[idx].flame.visible = true;
                 candles[idx].light.intensity = 0.8;
                 
-                const litCount = hallwayState.candlesLit.filter(lit => lit).length;
+                const litCount = basementState.candlesLit.filter(lit => lit).length;
                 if (litCount === 1) {
                     showGuideline("The air shimmers when I touch the fire...", 5000, 'first_candle');
                 } else if (litCount === 2) {
                     showGuideline("Each flame reveals something hidden.", 5000, 'second_candle');
                 }
                 
-                if (hallwayState.candlesLit.every(lit => lit)) {
+                if (basementState.candlesLit.every(lit => lit)) {
                     setTimeout(() => {
                         showGuideline("Oh… words in the light. What do they mean?", 7000, 'all_candles');
                         setTimeout(() => {
@@ -554,7 +738,7 @@ export function buildHallway(group, size, registerInteractable) {
             return { duration: 10, message: "Possessing candle flame..." };
         }
         
-        if (type === "possess_pendulum" && hallwayState.riddleSolved) {
+        if (type === "possess_pendulum" && basementState.riddleSolved) {
             playDramaticSound('pendulum_possess');
             showGuideline("Swing... three times should be enough.", 3000, 'pendulum_swing');
             let swingCount = 0;
@@ -566,18 +750,32 @@ export function buildHallway(group, size, registerInteractable) {
                     clearInterval(swingInterval);
                     pendulum.rotation.z = 0;
                     
-                    if (!hallwayState.keyDropped) {
+                    if (!basementState.keyDropped) {
                         playDramaticSound('key_drop');
-                        hallwayState.keyDropped = true;
+                        basementState.keyDropped = true;
+                        
+                        // Disable pendulum after key drops
+                        pendulum.userData.enabled = false;
+                        pendulum.userData.prompt = "The pendulum has done its work";
+                        
                         keyGroup.visible = true;
                         keyLabel.visible = true;
-                        butlerGroup.userData.enabled = true;
-                        butlerGroup.userData.prompt = "Press E to possess butler and pick up key";
+                        
+                        // Spawn letter with key
+                        letterGroup.visible = true;
+                        letterLabel.visible = true;
+                        letterGroup.userData.enabled = true;
+                        
+                        // Show messages about letter and key
                         setTimeout(() => {
-                            showGuideline("A key fell… but I can't pick it up. I need someone alive.", 7000, 'key_dropped');
+                            if (window.showCenterPrompt) {
+                                window.showCenterPrompt("A letter and a key fell from the clock. Read the letter first.", 10);
+                            }
                             setTimeout(() => {
-                                showGuideline("Maybe the butler can help me.", 7000, 'butler_hint');
-                            }, 7500);
+                                if (window.showCenterPrompt) {
+                                    window.showCenterPrompt("You cannot pick up the key. Possess the butler to pick it up.", 10);
+                                }
+                            }, 10500);
                         }, 500);
                     }
                 }
@@ -587,17 +785,24 @@ export function buildHallway(group, size, registerInteractable) {
         }
         
         if (type === "possess_butler") {
-            if (!hallwayState.keyCollected) {
+            if (!basementState.keyDropped) {
+                return { duration: 2, message: "The butler has nothing to do yet..." };
+            }
+            
+            if (!basementState.keyCollected) {
                 // Butler picks up key
                 return { 
                     duration: 8, 
                     message: "Possessing butler to pick up key...",
                     onEnd: () => {
                         playDramaticSound('key_pickup');
-                        hallwayState.keyCollected = true;
+                        basementState.keyCollected = true;
                         keyGroup.visible = false;
                         keyLabel.visible = false;
                         butlerGroup.userData.prompt = "Press E to possess butler and unlock door";
+                        if (window.markChecklistItem) {
+                            window.markChecklistItem('find-key');
+                        }
                         showGuideline("The butler has the key now. Possess him again to unlock the door.", 7000, 'key_collected');
                         setTimeout(() => {
                             showGuideline("That door hides something important...", 7000, 'door_hint');
@@ -610,9 +815,9 @@ export function buildHallway(group, size, registerInteractable) {
                     duration: 15, 
                     message: "Possessing butler to unlock door...",
                     onEnd: () => {
-                        if (!hallwayState.doorUnlocked) {
+                        if (!basementState.doorUnlocked) {
                             playDramaticSound('door_unlock');
-                            hallwayState.doorUnlocked = true;
+                            basementState.doorUnlocked = true;
                             doorPivot.rotation.y = -Math.PI / 2;
                             showGuideline("Light again… and something of me returns.", 7000, 'door_unlocked');
                             setTimeout(() => {
@@ -662,13 +867,18 @@ export function buildHallway(group, size, registerInteractable) {
         if (direction.length() > 0) {
             butlerGroup.rotation.y = Math.atan2(direction.x, direction.z);
         }
+        
+        // Update letter hover animation
+        if (letterGroup.visible && letterGroup.userData.updateLetter) {
+            letterGroup.userData.updateLetter(deltaTime);
+        }
     };
     
     // Proximity detection for guidelines
     group.userData.checkProximity = function(playerPos) {
         // Check candle proximity
         candlePositions.forEach((pos, idx) => {
-            if (!hallwayState.candlesLit[idx]) {
+            if (!basementState.candlesLit[idx]) {
                 const dist = Math.sqrt(
                     Math.pow(playerPos.x - pos.x, 2) + 
                     Math.pow(playerPos.z - pos.z, 2)
@@ -680,7 +890,7 @@ export function buildHallway(group, size, registerInteractable) {
         });
         
         // Check clock proximity after riddle solved
-        if (hallwayState.riddleSolved && !hallwayState.keyDropped) {
+        if (basementState.riddleSolved && !basementState.keyDropped) {
             const clockPos = clockGroup.position;
             const dist = Math.sqrt(
                 Math.pow(playerPos.x - (size.x / 2 - 0.8), 2) + 
@@ -691,8 +901,21 @@ export function buildHallway(group, size, registerInteractable) {
             }
         }
         
+        // Check key proximity after key dropped
+        if (basementState.keyDropped && !basementState.keyCollected) {
+            const keyDist = Math.sqrt(
+                Math.pow(playerPos.x - keyGroup.position.x, 2) + 
+                Math.pow(playerPos.z - keyGroup.position.z, 2)
+            );
+            if (keyDist < 2.5) {
+                if (window.showCenterPrompt) {
+                    window.showCenterPrompt("You cannot pick up the key. Possess the butler to pick it up.", 8);
+                }
+            }
+        }
+        
         // Check butler proximity after key dropped
-        if (hallwayState.keyDropped && !hallwayState.keyCollected) {
+        if (basementState.keyDropped && !basementState.keyCollected) {
             const dist = Math.sqrt(
                 Math.pow(playerPos.x - butlerGroup.position.x, 2) + 
                 Math.pow(playerPos.z - butlerGroup.position.z, 2)
@@ -813,5 +1036,5 @@ export function buildHallway(group, size, registerInteractable) {
         }
     };
     
-    console.log("Hallway built successfully");
+    console.log("Basement built successfully");
 }

@@ -136,36 +136,80 @@ export function buildChairmanOffice(group, size, registerInteractable) {
         chefDistracted: false,
         potOpened: false,
         letterRevealed: false,
-        shownGuidelines: new Set()
+        shownGuidelines: new Set(),
+        roomEnterTime: Date.now(),
+        lastActivity: Date.now(),
+        playerNearValve: false,
+        playerLookingAtFan: false
     };
     
-    const guidelines = document.getElementById('guidelines');
     let currentGuidelineTimeout = null;
     
-    function showGuideline(text, duration = 7000, key = null) {
-        if (!guidelines) return;
+    function showHint(text, duration = 7000, key = null) {
         if (key && officeState.shownGuidelines.has(key)) return;
         
-        if (currentGuidelineTimeout) {
-            clearTimeout(currentGuidelineTimeout);
+        // Speak the hint with husky voice
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 0.7;
+            utterance.volume = 0.9;
+            window.speechSynthesis.speak(utterance);
         }
         
-        guidelines.classList.remove('active');
-        setTimeout(() => {
-            guidelines.textContent = text;
-            guidelines.classList.add('active');
-            
-            if (key) officeState.shownGuidelines.add(key);
-            
-            currentGuidelineTimeout = setTimeout(() => {
-                guidelines.classList.remove('active');
-            }, duration);
-        }, 100);
+        if (window.showCenterPrompt) {
+            window.showCenterPrompt(text, duration / 1000);
+        }
+        
+        if (key) officeState.shownGuidelines.add(key);
     }
     
-    setTimeout(() => {
-        showGuideline("The chef guards something carefully. He won't move easily.", 7000, 'initial');
-    }, 1000);
+    // Progressive hint system - only for Chairman's Office
+    let hintTimer = 0;
+    function updateHints(deltaTime, playerPos) {
+        // Only run hints if player is in Chairman's Office (room index 2)
+        if (window.state && window.state.activeRoomIndex !== 2) return;
+        if (officeState.gasValveOpen) return;
+        
+        hintTimer += deltaTime;
+        const timeSinceEnter = (Date.now() - officeState.roomEnterTime) / 1000;
+        
+        // Initial hint
+        if (timeSinceEnter > 2 && !officeState.shownGuidelines.has('initial')) {
+            showHint("He guards that pot like it holds his sins. Search the room — something will make him leave.", 8000, 'initial');
+        }
+        
+        // Idle hint after 10s
+        if (timeSinceEnter > 10 && !officeState.shownGuidelines.has('idle')) {
+            showHint("There must be something here that creates a distraction. Look around.", 7000, 'idle');
+        }
+        
+        // Check player position for contextual hints
+        const valvePos = new THREE.Vector3(2.5, 0, -4.5);
+        const fanPos = new THREE.Vector3(3, 0, -2);
+        const distToValve = playerPos.distanceTo(valvePos);
+        const distToFan = playerPos.distanceTo(fanPos);
+        
+        // Near stove area hint
+        if (playerPos.x < -1 && playerPos.z < -2 && !officeState.shownGuidelines.has('stove')) {
+            showHint("The air smells strange to the right. Follow it.", 6000, 'stove');
+        }
+        
+        // Looking at fan area
+        if (distToFan < 4 && !officeState.shownGuidelines.has('fan')) {
+            showHint("Stir the wind up there — it might help.", 6000, 'fan');
+        }
+        
+        // Near right wall
+        if (playerPos.x > 1 && !officeState.shownGuidelines.has('rightwall')) {
+            showHint("A red wheel and a green grille — one opens, the other moves. Experiment.", 8000, 'rightwall');
+        }
+        
+        // Final escalation hint after 30s
+        if (timeSinceEnter > 30 && !officeState.shownGuidelines.has('final')) {
+            showHint("Combine the objects on the right wall to create a distraction.", 10000, 'final');
+        }
+    }
     
     
     // Floor - White with cracks
@@ -250,6 +294,24 @@ export function buildChairmanOffice(group, size, registerInteractable) {
     frontWall.rotation.y = Math.PI;
     frontWall.position.set(0, 0, size.z / 2);
     group.add(frontWall);
+    
+    // Gas hiss sound near valve
+    let gasHissSource = null;
+    function playGasHiss(volume = 0.1) {
+        if (!window.audioContext) return;
+        if (gasHissSource) gasHissSource.stop();
+        
+        const ctx = window.audioContext;
+        const now = ctx.currentTime;
+        gasHissSource = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gasHissSource.type = 'white';
+        gasHissSource.frequency.setValueAtTime(200, now);
+        gain.gain.setValueAtTime(volume, now);
+        gasHissSource.connect(gain).connect(ctx.destination);
+        gasHissSource.start(now);
+        gasHissSource.stop(now + 0.5);
+    }
     
     // Flickering bulb lighting
     const bulbLight = new THREE.PointLight(0xFFE4B5, 0.8, 15);
@@ -410,6 +472,22 @@ export function buildChairmanOffice(group, size, registerInteractable) {
     gasValve.userData.handle = valveHandle;
     group.add(gasValve);
     registerInteractable(gasValve);
+    
+    // Add subtle valve animation and glow
+    let valveTime = 0;
+    gasValve.userData.updateValve = function(deltaTime) {
+        valveTime += deltaTime;
+        valveHandle.rotation.z += Math.sin(valveTime * 2) * 0.002; // Micro wobble
+        
+        // Add reflective material
+        if (!gasValve.userData.glowAdded) {
+            valveBase.material.metalness = 0.9;
+            valveBase.material.roughness = 0.1;
+            valveHandle.material.metalness = 0.9;
+            valveHandle.material.roughness = 0.1;
+            gasValve.userData.glowAdded = true;
+        }
+    };
     
     // WROUGHT-IRON KITCHEN SHELVES - replacing office furniture
     const ironMaterial = new THREE.MeshStandardMaterial({ color: 0x2A2A2A, roughness: 0.4, metalness: 0.8 });
@@ -609,7 +687,7 @@ export function buildChairmanOffice(group, size, registerInteractable) {
                 exhaustFan.userData.enabled = true;
                 exhaustFan.userData.prompt = "Press E to blow smoke";
                 setTimeout(() => {
-                    showGuideline("Gas flows freely now. Something else in this room might use it.", 7000, 'valve_opened');
+                    showHint("Gas flows freely now. Something else in this room might use it.", 7000);
                 }, 3500);
             }
             return { duration: 3, message: "Opening gas valve..." };
@@ -650,7 +728,7 @@ export function buildChairmanOffice(group, size, registerInteractable) {
                 officeState.chefDistracted = true;
                 pot.userData.enabled = true;
                 pot.userData.prompt = "Press E to open pot";
-                showGuideline("The chef stumbles away, coughing. His station is unguarded now.", 7000, 'chef_distracted');
+                showHint("The chef stumbles away, coughing. His station is unguarded now.", 7000);
                 
                 setTimeout(() => {
                     smokeParticles.forEach((smoke) => (smoke.visible = false));
@@ -678,7 +756,7 @@ export function buildChairmanOffice(group, size, registerInteractable) {
             letter.visible = true;
             letter.userData.enabled = true;
             letter.userData.prompt = "Press E to collect letter";
-            showGuideline("Something hidden inside… a piece of the past.", 7000, 'pot_opened');
+            showHint("Something hidden inside… a piece of the past.", 7000);
 
             // Force UI to ONLY show letter prompt
             if (window.showCenterPrompt) {
@@ -700,6 +778,24 @@ export function buildChairmanOffice(group, size, registerInteractable) {
         new THREE.Vector3(-0.5, 0, -2.5)
     ];
     let chefTime = 0;
+    
+    // Player proximity tracking - only for Chairman's Office
+    group.userData.checkProximity = function(playerPos) {
+        // Only run if player is in Chairman's Office
+        if (window.state && window.state.activeRoomIndex !== 2) return;
+        
+        const valvePos = new THREE.Vector3(2.5, playerPos.y, -4.5);
+        const distToValve = playerPos.distanceTo(valvePos);
+        
+        // Play gas hiss when near valve
+        if (distToValve < 3 && !officeState.gasValveOpen) {
+            const volume = Math.max(0, (3 - distToValve) / 3) * 0.15;
+            if (Math.random() < 0.1) playGasHiss(volume);
+        }
+        
+        // Update hints based on position
+        updateHints(0.1, playerPos);
+    };
     
     group.userData.updateChef = function(deltaTime) {
         if (officeState.chefDistracted) {
@@ -725,6 +821,16 @@ export function buildChairmanOffice(group, size, registerInteractable) {
         // Update flickering light
         if (group.userData.updateLighting) {
             group.userData.updateLighting(deltaTime);
+        }
+        
+        // Update valve animation
+        if (gasValve.userData.updateValve) {
+            gasValve.userData.updateValve(deltaTime);
+        }
+        
+        // Update hints only if in Chairman's Office
+        if (window.state && window.state.activeRoomIndex === 2) {
+            updateHints(deltaTime, new THREE.Vector3(0, 0, 0));
         }
     };
 

@@ -4,7 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { gsap } from "gsap";
 import { Capsule } from "three/examples/jsm/math/Capsule.js";
-import { buildHallway } from "./rooms/hallway.js";
+import { buildBasement as buildBasementRoom1 } from "./rooms/hallway.js";
 import { buildLabs } from "./rooms/labs.js";
 import { buildChairmanOffice } from "./rooms/chairmanOffice.js";
 import { buildDorm } from "./rooms/dorm.js";
@@ -37,8 +37,8 @@ const state = {
     gameStarted: false,
     flashlightOn: false,
     battery: 1,
-    batteryDrainRate: 0.018,
-    timeRemaining: 6 * 60,
+    batteryDrainRate: 0,
+    timeRemaining: 999 * 60,
     hoveredInteraction: null,
     riddleActive: false,
     currentRiddle: null,
@@ -450,7 +450,7 @@ const defaultRoomSize = new THREE.Vector3(9.2, 8, 13.2); // 15% wider, 10% deepe
 
 const roomBlueprints = [
     {
-        name: "Hallway",
+        name: "Basement",
         position: new THREE.Vector3(0, 0, 0),
         keyPosition: new THREE.Vector3(-2.2, -defaultRoomSize.y / 2 + 0.55, 2.9),
         riddlePosition: new THREE.Vector3(2.6, -defaultRoomSize.y / 2 + 0.55, -1.4),
@@ -461,7 +461,7 @@ const roomBlueprints = [
         nextRoomIndex: 1,
     },
     {
-        name: "Labs",
+        name: "Library of Whispers",
         position: new THREE.Vector3(0, 0, -15),
         keyPosition: new THREE.Vector3(1.8, -defaultRoomSize.y / 2 + 0.55, -2.8),
         riddlePosition: new THREE.Vector3(-2.4, -defaultRoomSize.y / 2 + 0.55, 1.8),
@@ -483,7 +483,7 @@ const roomBlueprints = [
         nextRoomIndex: 3,
     },
     {
-        name: "Dorm",
+        name: "Private Chamber",
         position: new THREE.Vector3(0, 0, -45),
         keyPosition: new THREE.Vector3(2.5, -defaultRoomSize.y / 2 + 0.55, -1.4),
         riddlePosition: new THREE.Vector3(-2.7, -defaultRoomSize.y / 2 + 0.55, 1.5),
@@ -797,6 +797,19 @@ window.__transitionToRoom = transitionToRoom;
 window.__transitionToRoomByName = (name, showTitle = true) => transitionToRoomByName(name, showTitle);
 window.showCenterPrompt = showCenterPrompt;
 window.transitionToRoom = transitionToRoomByName;
+window.state = state;
+
+// Checklist functionality
+window.markChecklistItem = function(itemId) {
+    const item = document.getElementById(itemId);
+    if (item && !item.classList.contains('completed')) {
+        item.classList.add('completed');
+        const checkbox = item.querySelector('.checkbox');
+        if (checkbox) {
+            checkbox.textContent = '☑';
+        }
+    }
+};
 
 function buildRoom(blueprint, index) {
     const group = new THREE.Group();
@@ -1013,7 +1026,7 @@ function buildRoom(blueprint, index) {
     bulb.add(bulbLight);
 
     const doorWidth = 1.8;
-    const doorHeight = 2.6;
+    const doorHeight = index === 1 ? size.y * 0.95 : 2.6;
     const doorPivot = new THREE.Group();
     doorPivot.position.set(0, -size.y / 2 + doorHeight / 2, -size.z / 2 + 0.12);
     group.add(doorPivot);
@@ -1021,7 +1034,7 @@ function buildRoom(blueprint, index) {
     const doorMesh = new THREE.Mesh(
         new THREE.BoxGeometry(doorWidth, doorHeight, 0.14),
         new THREE.MeshStandardMaterial({
-            color: 0x4a3828,
+            color: index === 1 ? 0x8B6F47 : 0x4a3828,
             roughness: 0.92,
             metalness: 0.0,
         })
@@ -1034,14 +1047,14 @@ function buildRoom(blueprint, index) {
 
     // Door knob
     const doorKnob = new THREE.Mesh(
-        new THREE.SphereGeometry(0.08, 16, 16),
+        new THREE.SphereGeometry(index === 1 ? 0.15 : 0.08, 16, 16),
         new THREE.MeshStandardMaterial({
-            color: 0x8a7a5a,
-            roughness: 0.6,
-            metalness: 0.5,
+            color: index === 1 ? 0xFFD700 : 0x8a7a5a,
+            roughness: index === 1 ? 0.2 : 0.6,
+            metalness: index === 1 ? 0.9 : 0.5,
         })
     );
-    doorKnob.position.set(doorWidth * 0.8, 0, 0.08);
+    doorKnob.position.set(doorWidth * 0.4, 0, 0.08);
     doorMesh.add(doorKnob);
 
     const doorGlow = createGlowSprite(0x6a5438, 0.8, 1.8);
@@ -1115,9 +1128,12 @@ function buildRoom(blueprint, index) {
         answer: blueprint.riddle.answer.toLowerCase(),
         solved: false,
     };
+    riddleMesh.visible = (index !== 0);
     group.add(riddleMesh);
     riddleNodes.push(riddleMesh);
-    registerInteractable(riddleMesh);
+    if (index !== 0) {
+        registerInteractable(riddleMesh);
+    }
 
     const coldLight = new THREE.PointLight(0x6a5f4a, 0.2, 20, 2.0);
     coldLight.position.set(0, size.y / 2 - 1, 1.5);
@@ -1149,7 +1165,7 @@ function buildRoom(blueprint, index) {
 
     // Call appropriate room builder based on index
     if (index === 0) {
-        buildHallway(group, size, registerInteractable);
+        buildBasementRoom1(group, size, registerInteractable);
     } else if (index === 1) {
         buildLabs(group, size, registerInteractable);
     } else if (index === 2) {
@@ -1469,7 +1485,7 @@ function buildRoom(blueprint, index) {
         group.add(dustParticles);
     }
 
-    // Add glass box (decorative only for hallway)
+    // Add glass box
     const glassBox = new THREE.Mesh(
         new THREE.BoxGeometry(0.6, 0.6, 0.6),
         new THREE.MeshPhysicalMaterial({
@@ -1487,6 +1503,7 @@ function buildRoom(blueprint, index) {
         blueprint.riddlePosition.z
     );
     glassBox.castShadow = true;
+    glassBox.visible = (index !== 0);
     if (index !== 0) {
         glassBox.userData = {
             type: "box",
@@ -1498,7 +1515,9 @@ function buildRoom(blueprint, index) {
         registerInteractable(glassBox);
     }
     group.add(glassBox);
-    registerCollisionMesh(glassBox, "Furniture");
+    if (index !== 0) {
+        registerCollisionMesh(glassBox, "Furniture");
+    }
 
     // Letter/paper on box
     const letter = new THREE.Mesh(
@@ -1511,6 +1530,7 @@ function buildRoom(blueprint, index) {
         glassBox.position.z
     );
     letter.rotation.x = -Math.PI / 6;
+    letter.visible = (index !== 0);
     group.add(letter);
 
     // Key inside box (visible from start, except hallway)
@@ -1779,7 +1799,12 @@ function handleInteraction() {
     const interaction = state.hoveredInteraction;
     const type = interaction.userData.type;
 
-    if (type === "key") {
+    if (type === "key" || type === "key_pickup") {
+        // In hallway, show message that ghost can't pick up key
+        if (state.activeRoomIndex === 0 && type === "key_pickup") {
+            showCenterPrompt("You cannot pick up the key. Possess the butler to pick it up.", 8);
+            return;
+        }
         collectKey(interaction);
     } else if (type === "door") {
         if (interaction.userData.locked) {
@@ -1814,6 +1839,11 @@ function handleInteraction() {
         if (riddleNode) {
             openRiddleOverlay(riddleNode);
         }
+    } else if (type === "letter_read") {
+        const currentRoom = roomsData[state.activeRoomIndex];
+        if (currentRoom && currentRoom.group.userData.interact) {
+            currentRoom.group.userData.interact(interaction);
+        }
     } else if (type && type.startsWith("possess_")) {
         if (!interaction.userData.enabled && interaction.userData.enabled !== undefined) {
             showCenterPrompt(interaction.userData.prompt || "Not available yet", 2);
@@ -1829,11 +1859,11 @@ function handleInteraction() {
                 }
             }
         }
-    } else if (type === "letter_pickup") {
+    } else if (type === "letter_pickup" || type === "paper" || type === "letter" || type === "safe") {
         const currentRoom = roomsData[state.activeRoomIndex];
         if (currentRoom && currentRoom.group.userData.interact) {
             const result = currentRoom.group.userData.interact(interaction);
-            if (result) {
+            if (result && result.message) {
                 showCenterPrompt(result.message, result.duration);
             }
         }
@@ -1850,26 +1880,142 @@ function handleInteraction() {
  * Pointer lock
  */
 instructionsElement.addEventListener("click", (event) => {
-    if (event.target.id === "skip-to-room3") {
+    // Handle skip buttons
+    if (event.target.id === "skip-to-room2") {
+        startGameAtRoom(1); // Labs (index 1)
         return;
     }
+    if (event.target.id === "skip-to-room3") {
+        startGameAtRoom(2); // Chairman's Office (index 2)
+        return;
+    }
+    if (event.target.id === "skip-to-room4") {
+        startGameAtRoom(3); // Dorm (index 3)
+        return;
+    }
+    
+    // Regular game start
     if (state.gameOver) {
         return;
     }
+    startGameAtRoom(0); // Hallway (index 0)
+});
+
+function startGameAtRoom(roomIndex) {
     ensureAudioContext();
     if (!window.audioContext) {
         window.audioContext = audioContext;
     }
+    
+    // Initialize speech synthesis with user interaction
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        // Test utterance to initialize
+        const testUtterance = new SpeechSynthesisUtterance('');
+        window.speechSynthesis.speak(testUtterance);
+    }
+    
     startAmbientBed();
     instructionsElement.classList.add("hidden");
     resetPlayerTransform();
-    requestPointerLock();
+    
+    // Set up game state for the target room
     state.gameStarted = true;
-    state.activeRoomIndex = 0;
-    showCenterPrompt(roomsData[0].name, 3);
+    state.activeRoomIndex = roomIndex;
+    
+    // Position player in the target room
+    const targetRoom = roomsData[roomIndex];
+    if (targetRoom) {
+        playerState.position.set(
+            targetRoom.group.position.x,
+            targetRoom.floorY,
+            targetRoom.group.position.z + 4
+        );
+        previousPlayerPosition.copy(playerState.position);
+        updatePlayerColliderFromState();
+        syncPlayerTransforms();
+        
+        // Mark room as visited
+        targetRoom.visited = true;
+        
+        // Show room name
+        showCenterPrompt(targetRoom.name, 3);
+        
+        // Chairman's Office will handle its own hints via the room's hint system
+        
+        // If skipping to room 2 or 3, unlock previous doors and make keys available
+        if (roomIndex >= 1) {
+            // Unlock basement door and make key available
+            const basementDoor = doors[0];
+            if (basementDoor) {
+                basementDoor.userData.locked = false;
+                basementDoor.userData.opened = true;
+                gsap.set(basementDoor.rotation, { y: -Math.PI / 2 });
+            }
+            
+            // Make basement key available (solve riddle)
+            const basementRiddle = riddleNodes[0];
+            if (basementRiddle) {
+                basementRiddle.userData.solved = true;
+                roomsData[0].key.userData.active = true;
+            }
+        }
+        
+        if (roomIndex >= 2) {
+            // Unlock labs door and make key available
+            const labsDoor = doors[1];
+            if (labsDoor) {
+                labsDoor.userData.locked = false;
+                labsDoor.userData.opened = true;
+                gsap.set(labsDoor.rotation, { y: -Math.PI / 2 });
+            }
+            
+            // Make labs key available (solve riddle)
+            const labsRiddle = riddleNodes[1];
+            if (labsRiddle) {
+                labsRiddle.userData.solved = true;
+                roomsData[1].key.userData.active = true;
+            }
+        }
+        
+        if (roomIndex >= 3) {
+            // Unlock chairman's office door and make key available
+            const chairmanDoor = doors[2];
+            if (chairmanDoor) {
+                chairmanDoor.userData.locked = false;
+                chairmanDoor.userData.opened = true;
+                gsap.set(chairmanDoor.rotation, { y: -Math.PI / 2 });
+            }
+            
+            // Make chairman's office key available (solve riddle)
+            const chairmanRiddle = riddleNodes[2];
+            if (chairmanRiddle) {
+                chairmanRiddle.userData.solved = true;
+                roomsData[2].key.userData.active = true;
+            }
+        }
+    }
+    
+    requestPointerLock();
+}
+
+
+
+// Add skip button event listeners
+document.getElementById("skip-to-room2").addEventListener("click", (event) => {
+    event.stopPropagation();
+    startGameAtRoom(1);
 });
 
+document.getElementById("skip-to-room3").addEventListener("click", (event) => {
+    event.stopPropagation();
+    startGameAtRoom(2);
+});
 
+document.getElementById("skip-to-room4").addEventListener("click", (event) => {
+    event.stopPropagation();
+    startGameAtRoom(3);
+});
 
 /**
  * Event listeners
@@ -2169,12 +2315,7 @@ function updateFlashlight(deltaTime) {
         flashlight.intensity = 0;
         return;
     }
-    state.battery = Math.max(state.battery - state.batteryDrainRate * deltaTime, 0);
-    flashlight.intensity = 4.8 * Math.max(state.battery, 0.15);
-    flashlight.angle = THREE.MathUtils.degToRad(18 + (1 - state.battery) * 6);
-    if (state.battery <= 0) {
-        triggerDeath("Your light fades. Darkness takes you.");
-    }
+    flashlight.intensity = 4.8;
     updateBatteryUI();
 }
 
@@ -2182,11 +2323,7 @@ function updateTimer(deltaTime) {
     if (state.gameOver) {
         return;
     }
-    state.timeRemaining = Math.max(state.timeRemaining - deltaTime, 0);
     updateTimerUI();
-    if (state.timeRemaining <= 0) {
-        triggerDeath("Time shatters. You remain trapped forever.");
-    }
 }
 
 function updateFlickerLights(elapsedTime) {
@@ -2210,11 +2347,17 @@ function tick() {
         updateInteractionTarget();
         updateFlickerLights(elapsedTime);
         
-        // Hallway updates
+        // Room-specific updates
         const currentRoom = roomsData[state.activeRoomIndex];
         if (currentRoom) {
             if (currentRoom.group.userData.updateButler) {
                 currentRoom.group.userData.updateButler(deltaTime);
+            }
+            if (currentRoom.group.userData.updateMaid) {
+                currentRoom.group.userData.updateMaid(deltaTime, playerState.position);
+            }
+            if (currentRoom.group.userData.updateChandeliers) {
+                currentRoom.group.userData.updateChandeliers(deltaTime, playerState.position);
             }
             if (currentRoom.group.userData.checkProximity) {
                 currentRoom.group.userData.checkProximity(playerState.position);
