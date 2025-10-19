@@ -795,6 +795,8 @@ function transitionToRoomByName(name, showTitle = true) {
 
 window.__transitionToRoom = transitionToRoom;
 window.__transitionToRoomByName = (name, showTitle = true) => transitionToRoomByName(name, showTitle);
+window.showCenterPrompt = showCenterPrompt;
+window.transitionToRoom = transitionToRoomByName;
 
 function buildRoom(blueprint, index) {
     const group = new THREE.Group();
@@ -1827,6 +1829,14 @@ function handleInteraction() {
                 }
             }
         }
+    } else if (type === "letter_pickup") {
+        const currentRoom = roomsData[state.activeRoomIndex];
+        if (currentRoom && currentRoom.group.userData.interact) {
+            const result = currentRoom.group.userData.interact(interaction);
+            if (result) {
+                showCenterPrompt(result.message, result.duration);
+            }
+        }
     } else if (type === "heart_fragment") {
         showCenterPrompt("Heart Fragment collected! Transitioning...", 3);
         interaction.visible = false;
@@ -1839,7 +1849,10 @@ function handleInteraction() {
 /**
  * Pointer lock
  */
-instructionsElement.addEventListener("click", () => {
+instructionsElement.addEventListener("click", (event) => {
+    if (event.target.id === "skip-to-room3") {
+        return;
+    }
     if (state.gameOver) {
         return;
     }
@@ -1855,6 +1868,8 @@ instructionsElement.addEventListener("click", () => {
     state.activeRoomIndex = 0;
     showCenterPrompt(roomsData[0].name, 3);
 });
+
+
 
 /**
  * Event listeners
