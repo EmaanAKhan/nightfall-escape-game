@@ -433,7 +433,7 @@ const flickerLights = [];
 const roomsData = [];
 const doors = [];
 const keys = [];
-const riddleNodes = [];
+
 const interactables = [];
 const collisionMeshes = [];
 
@@ -1108,33 +1108,7 @@ function buildRoom(blueprint, index) {
     keyLight.position.set(0, 0.1, 0);
     key.add(keyLight);
 
-    const riddleMesh = new THREE.Mesh(
-        new THREE.TorusKnotGeometry(0.28, 0.08, 80, 10),
-        new THREE.MeshStandardMaterial({
-            color: 0x1a2330,
-            roughness: 0.4,
-            metalness: 0.65,
-            emissive: 0x123450,
-            emissiveIntensity: 0.4,
-        })
-    );
-    riddleMesh.castShadow = true;
-    riddleMesh.position.copy(blueprint.riddlePosition);
-    riddleMesh.userData = {
-        type: "riddle",
-        roomIndex: index,
-        range: 3.0,
-        label: `${blueprint.name} Relic`,
-        question: blueprint.riddle.question,
-        answer: blueprint.riddle.answer.toLowerCase(),
-        solved: false,
-    };
-    riddleMesh.visible = (index !== 0);
-    group.add(riddleMesh);
-    riddleNodes.push(riddleMesh);
-    if (index !== 0) {
-        registerInteractable(riddleMesh);
-    }
+
 
     const coldLight = new THREE.PointLight(0x6a5f4a, 0.2, 20, 2.0);
     coldLight.position.set(0, size.y / 2 - 1, 1.5);
@@ -1486,63 +1460,10 @@ function buildRoom(blueprint, index) {
         group.add(dustParticles);
     }
 
-    // Add glass box
-    const glassBox = new THREE.Mesh(
-        new THREE.BoxGeometry(0.6, 0.6, 0.6),
-        new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.3,
-            roughness: 0.1,
-            metalness: 0.1,
-            transmission: 0.9,
-        })
-    );
-    glassBox.position.set(
-        blueprint.riddlePosition.x,
-        -size.y / 2 + 0.8,
-        blueprint.riddlePosition.z
-    );
-    glassBox.castShadow = true;
-    glassBox.visible = (index !== 0);
+    // Make key visible and active from start (except hallway)
     if (index !== 0) {
-        glassBox.userData = {
-            type: "box",
-            roomIndex: index,
-            range: 3.0,
-            label: "Glass Box",
-            solved: false,
-        };
-        registerInteractable(glassBox);
-    }
-    group.add(glassBox);
-    if (index !== 0) {
-        registerCollisionMesh(glassBox, "Furniture");
-    }
-
-    // Letter/paper on box
-    const letter = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.3, 0.4),
-        new THREE.MeshStandardMaterial({ color: 0xfff8dc, roughness: 0.8 })
-    );
-    letter.position.set(
-        glassBox.position.x,
-        glassBox.position.y + 0.35,
-        glassBox.position.z
-    );
-    letter.rotation.x = -Math.PI / 6;
-    letter.visible = (index !== 0);
-    group.add(letter);
-
-    // Key inside box (visible from start, except hallway)
-    if (index !== 0) {
-        key.position.set(
-            glassBox.position.x,
-            glassBox.position.y,
-            glassBox.position.z
-        );
         key.visible = true;
-        key.userData.active = false;
+        key.userData.active = true;
     }
 
     const roomData = {
@@ -1554,7 +1475,7 @@ function buildRoom(blueprint, index) {
         floorY,
         door: doorPivot,
         key,
-        riddle: riddleMesh,
+
         visited: index === 0,
     };
 
@@ -1653,9 +1574,7 @@ function getPromptForInteraction(object3d) {
     if (type === "riddle") {
         return object3d.userData.solved ? "" : "Press E to inspect";
     }
-    if (type === "box") {
-        return "Press E to inspect";
-    }
+
     if (type.startsWith("possess_")) {
         return "Press E to interact";
     }
@@ -1681,9 +1600,7 @@ function updateInteractionTarget() {
         if (type === "riddle" && item.userData.solved) {
             return;
         }
-        if (type === "box" && item.userData.solved) {
-            return;
-        }
+
         if (item.userData.enabled === false) {
             return;
         }
@@ -1834,12 +1751,7 @@ function handleInteraction() {
         }
     } else if (type === "riddle") {
         openRiddleOverlay(interaction);
-    } else if (type === "box") {
-        const roomIndex = interaction.userData.roomIndex;
-        const riddleNode = riddleNodes[roomIndex];
-        if (riddleNode) {
-            openRiddleOverlay(riddleNode);
-        }
+
     } else if (type === "letter_read") {
         const currentRoom = roomsData[state.activeRoomIndex];
         if (currentRoom && currentRoom.group.userData.interact) {
@@ -1967,12 +1879,8 @@ function startGameAtRoom(roomIndex) {
                 gsap.set(basementDoor.rotation, { y: -Math.PI / 2 });
             }
             
-            // Make basement key available (solve riddle)
-            const basementRiddle = riddleNodes[0];
-            if (basementRiddle) {
-                basementRiddle.userData.solved = true;
-                roomsData[0].key.userData.active = true;
-            }
+            // Make basement key available
+            roomsData[0].key.userData.active = true;
         }
         
         if (roomIndex >= 2) {
@@ -1984,12 +1892,8 @@ function startGameAtRoom(roomIndex) {
                 gsap.set(labsDoor.rotation, { y: -Math.PI / 2 });
             }
             
-            // Make labs key available (solve riddle)
-            const labsRiddle = riddleNodes[1];
-            if (labsRiddle) {
-                labsRiddle.userData.solved = true;
-                roomsData[1].key.userData.active = true;
-            }
+            // Make labs key available
+            roomsData[1].key.userData.active = true;
         }
         
         if (roomIndex >= 3) {
@@ -2001,12 +1905,8 @@ function startGameAtRoom(roomIndex) {
                 gsap.set(chairmanDoor.rotation, { y: -Math.PI / 2 });
             }
             
-            // Make chairman's office key available (solve riddle)
-            const chairmanRiddle = riddleNodes[2];
-            if (chairmanRiddle) {
-                chairmanRiddle.userData.solved = true;
-                roomsData[2].key.userData.active = true;
-            }
+            // Make chairman's office key available
+            roomsData[2].key.userData.active = true;
         }
     }
     

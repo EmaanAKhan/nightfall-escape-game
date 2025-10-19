@@ -35,26 +35,32 @@ function showLetterPopup(text) {
         line-height: 1.5;
         text-align: center;
     `;
-    textDiv.textContent = text;
+    textDiv.innerHTML = text + '<br><br><span style="font-size: 14px; color: #666;">[Press Enter to close]</span>';
     
     popup.appendChild(textDiv);
-    
-    setTimeout(() => {
-        document.body.removeChild(overlay);
-        if (window.spawnHeartFragment) {
-            playDramaticSound('heart_spawn');
-            window.spawnHeartFragment();
-        }
-        setTimeout(() => {
-            if (window.transitionToRoom) {
-                window.transitionToRoom('commonRoom');
-            } else if (window.loadRoom) {
-                window.loadRoom('commonRoom');
-            }
-        }, 3000);
-    }, 10000);
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
+    
+    const closeHandler = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            document.body.removeChild(overlay);
+            document.removeEventListener('keydown', closeHandler);
+            if (window.spawnHeartFragment) {
+                playDramaticSound('heart_spawn');
+                window.spawnHeartFragment();
+            }
+            setTimeout(() => {
+                if (window.transitionToRoom) {
+                    window.transitionToRoom('commonRoom');
+                } else if (window.loadRoom) {
+                    window.loadRoom('commonRoom');
+                }
+            }, 3000);
+        }
+    };
+    document.addEventListener('keydown', closeHandler);
 }
 
 function playDramaticSound(type) {
@@ -195,8 +201,8 @@ export function buildChairmanOffice(group, size, registerInteractable) {
             showHint("The air smells strange to the right. Follow it.", 6000, 'stove');
         }
         
-        // Looking at fan area
-        if (distToFan < 4 && !officeState.shownGuidelines.has('fan')) {
+        // Looking at fan area - only show once when first near
+        if (distToFan < 4 && !officeState.shownGuidelines.has('fan') && timeSinceEnter > 5) {
             showHint("Stir the wind up there — it might help.", 6000, 'fan');
         }
         
