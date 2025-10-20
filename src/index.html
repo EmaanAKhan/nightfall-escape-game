@@ -1,62 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nightfall Escape</title>
+    <title>Last Witness</title>
 </head>
-
 <body>
+    <div class="ember-particles">
+        <!-- ember spans generated for subtle ambient motion -->
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="smoke-haze"></div>
 
     <div class="container">
         <canvas class="webgl"></canvas>
         <div class="loading-bar"></div>
 
-        <div class="top-left-overlay">
+        <div class="hud">
             <div class="battery">
                 <div class="battery-fill" id="battery-fill"></div>
             </div>
-            <div class="timer" id="timer">06:00</div>
+            <div class="timer" id="timer">15:00</div>
         </div>
 
-        <div class="center-prompt" id="center-prompt"></div>
-        <div class="interaction-prompt" id="interaction-prompt"></div>
-        
-        <!-- Custom Hallway Riddle -->
-        <div class="hallway-riddle" id="hallway-riddle" style="display: none;">
-            <div class="hallway-riddle-content">
-                <p id="hallway-riddle-text">I melt but never cry.</p>
-                <input id="hallway-riddle-input" type="text" placeholder="Type your answer..." />
-            </div>
-        </div>
-        
-        <!-- Guidelines Overlay -->
-        <div class="guidelines" id="guidelines"></div>
-        
-        <!-- Controls Help -->
         <div class="controls-help">
             <div>WASD - Move</div>
             <div>E - Interact/Possess</div>
             <div>F - Flashlight</div>
             <div>V - Camera View</div>
         </div>
-        
-        <!-- Checklist -->
+
+        <div class="center-prompt" id="center-prompt"></div>
+        <div class="interaction-prompt" id="interaction-prompt"></div>
+
+        <div class="hallway-riddle" id="basement-riddle" style="display: none;">
+            <div class="hallway-riddle-content">
+                <p id="hallway-riddle-text">I melt but never cry.</p>
+                <input id="basement-riddle-input" type="text" placeholder="Type your answer..." />
+            </div>
+        </div>
+
+        <div class="guidelines" id="guidelines"></div>
+
         <div class="checklist" id="checklist">
             <h3>Objectives</h3>
-            <div class="checklist-item" id="read-letter">
-                <span class="checkbox">☐</span> Read the letter
-            </div>
-            <div class="checklist-item" id="find-key">
-                <span class="checkbox">☐</span> Find the key to the next room
-            </div>
-            <div class="checklist-item" id="collect-heart-2">
-                <span class="checkbox">☐</span> Collect Heart Fragment #2
-            </div>
-            <div class="checklist-item" id="read-letter-2">
-                <span class="checkbox">☐</span> Read Burnt Letter #2
-            </div>
         </div>
 
         <div class="bottom-ui">
@@ -93,30 +87,35 @@
         <div class="fade-overlay" id="fade-overlay"></div>
 
         <div class="instructions" id="instructions">
-            <h1>The Haunted Body — Prologue</h1>
-            <p>Review these rules before you awaken:</p>
-            <ul class="rules-list">
-                <li>You are a ghost — you cannot touch, only possess.</li>
-                <li>Every room hides a piece of what you once were.</li>
-                <li>Light reveals truth; darkness conceals it.</li>
-                <li>Solve each riddle to move closer to your body.</li>
-                <li>Press E near glowing objects to interact or possess.</li>
-                <li>The living will not see you, but some will feel you.</li>
-                <li>Collect all body fragments to uncover how you died.</li>
-            </ul>
-            <p class="instructions-tip">Click anywhere to begin. Use WASD to move.</p>
-            
-            <div class="skip-buttons">
-                <button id="skip-to-room2" class="skip-btn">Skip to Room 2 (Labs)</button>
-                <button id="skip-to-room3" class="skip-btn">Skip to Room 3 (Chairman's Office)</button>
-                <button id="skip-to-room4" class="skip-btn">Skip to Room 4 (Private Chamber)</button>
-            </div>
+            <div class="menu-frame">
+                <div class="menu-title-group">
+                    <h1 class="game-title">LAST WITNESS</h1>
+                    <h2 class="game-episode">PROLOGUE</h2>
+                    <p class="menu-tagline">&ldquo;A ghost remembers what justice forgot.&rdquo;</p>
+                </div>
 
+                <div class="rules-panel">
+                    <h3>REVIEW THESE RULES BEFORE YOU AWAKEN:</h3>
+                    <ul class="rules-list">
+                        <li>You are a <span class="ember-word">ghost</span> - you cannot touch, only <span class="ember-word">possess</span>.</li>
+                        <li>Every room hides a piece of what you once were.</li>
+                        <li><span class="ember-word">Light</span> reveals <span class="ember-word">truth</span>; darkness conceals it.</li>
+                        <li>Solve each riddle to move closer to your <span class="ember-word">body</span>.</li>
+                        <li>Press <strong>E</strong> near glowing objects to interact or <span class="ember-word">possess</span>.</li>
+                        <li>The living will not see you, but some will feel you.</li>
+                        <li>Collect all body fragments to uncover how you <span class="ember-word">died</span>.</li>
+                    </ul>
+                </div>
+
+                <div class="menu-buttons">
+                    <button id="skip-to-room2">SKIP TO ROOM 2 (LIBRARY)</button>
+                    <button id="skip-to-room3">SKIP TO ROOM 3 (KITCHEN)</button>
+                    <button id="skip-to-room4">SKIP TO ROOM 4 (PRIVATE CHAMBER)</button>
+                </div>
+
+                <p class="instruction-text">CLICK ANYWHERE TO BEGIN. USE WASD TO MOVE.</p>
+            </div>
         </div>
     </div>
-
-
 </body>
-
-
 </html>

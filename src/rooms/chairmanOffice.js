@@ -1,67 +1,4 @@
-import * as THREE from "three";
-
-function showLetterPopup(text) {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-    `;
-    
-    const popup = document.createElement('div');
-    popup.style.cssText = `
-        background: #D2B48C;
-        border: 3px solid #8B4513;
-        border-radius: 10px;
-        padding: 30px;
-        max-width: 600px;
-        max-height: 400px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-        position: relative;
-    `;
-    
-    const textDiv = document.createElement('div');
-    textDiv.style.cssText = `
-        color: #000000;
-        font-family: serif;
-        font-size: 18px;
-        line-height: 1.5;
-        text-align: center;
-    `;
-    textDiv.innerHTML = text + '<br><br><span style="font-size: 14px; color: #666;">[Press Enter to close]</span>';
-    
-    popup.appendChild(textDiv);
-    overlay.appendChild(popup);
-    document.body.appendChild(overlay);
-    
-    const closeHandler = (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            e.stopPropagation();
-            document.body.removeChild(overlay);
-            document.removeEventListener('keydown', closeHandler);
-            if (window.spawnHeartFragment) {
-                playDramaticSound('heart_spawn');
-                window.spawnHeartFragment();
-            }
-            setTimeout(() => {
-                if (window.transitionToRoom) {
-                    window.transitionToRoom('commonRoom');
-                } else if (window.loadRoom) {
-                    window.loadRoom('commonRoom');
-                }
-            }, 3000);
-        }
-    };
-    document.addEventListener('keydown', closeHandler);
-}
+﻿import * as THREE from "three";
 
 function playDramaticSound(type) {
     if (!window.audioContext) {
@@ -142,6 +79,9 @@ export function buildChairmanOffice(group, size, registerInteractable) {
         chefDistracted: false,
         potOpened: false,
         letterRevealed: false,
+        letterRead: false,
+        heartCollected: false,
+        heartReward: null,
         shownGuidelines: new Set(),
         roomEnterTime: Date.now(),
         lastActivity: Date.now(),
@@ -203,12 +143,12 @@ export function buildChairmanOffice(group, size, registerInteractable) {
         
         // Looking at fan area - only show once when first near
         if (distToFan < 4 && !officeState.shownGuidelines.has('fan') && timeSinceEnter > 5) {
-            showHint("Stir the wind up there — it might help.", 6000, 'fan');
+            showHint("Stir the wind up there - it might help.", 6000, 'fan');
         }
         
         // Near right wall
         if (playerPos.x > 1 && !officeState.shownGuidelines.has('rightwall')) {
-            showHint("A red wheel and a green grille — one opens, the other moves. Experiment.", 8000, 'rightwall');
+            showHint("A red wheel and a green grille - one opens, the other moves. Experiment.", 8000, 'rightwall');
         }
         
         // Final escalation hint after 30s
@@ -390,22 +330,7 @@ export function buildChairmanOffice(group, size, registerInteractable) {
     pot.userData.enabled = false;
     pot.userData.lid = potLid;
     group.add(pot);
-    registerInteractable(pot);
-    
-    // Hidden letter inside pot
-    const letter = new THREE.Mesh(
-        new THREE.BoxGeometry(0.2, 0.01, 0.15),
-        new THREE.MeshStandardMaterial({ color: 0xF5F5DC, roughness: 0.8 })
-    );
-    letter.position.set(-3, -size.y / 2 + 1.45, -3);
-    letter.rotation.x = Math.PI / 2;
-    letter.visible = false;
-    letter.userData.type = "letter_pickup";
-    letter.userData.prompt = "Press E to collect letter";
-    letter.userData.enabled = false;
-    group.add(letter);
-    registerInteractable(letter);
-    
+    registerInteractable(pot);    
     // SINK on counter
     const sink = new THREE.Mesh(
         new THREE.BoxGeometry(1, 0.3, 0.8),
@@ -664,19 +589,7 @@ export function buildChairmanOffice(group, size, registerInteractable) {
     }
 
     // INTERACTION LOGIC
-    group.userData.interact = function(object) {
-        const type = object.userData.type;
-        
-        if (type === "letter_pickup" && officeState.letterRevealed) {
-            playDramaticSound('letter_pickup');
-            letter.visible = false;
-            letter.userData.enabled = false;
-            
-            showLetterPopup("The letter reads:\n\nThey said it was just an accident… but I saw the Cop arguing that night. Burn the evidence, hide the truth. If the fire doesn't erase it, the body will...");
-            
-            return { duration: 2, message: "Letter collected!" };
-        }
-        
+    group.userData.interact = function() {
         return null;
     };
     
@@ -752,21 +665,64 @@ export function buildChairmanOffice(group, size, registerInteractable) {
             object.userData.lid.position.x += 0.3;
             object.userData.lid.rotation.z = Math.PI / 6;
             object.userData.enabled = false;
-            letter.visible = true;
-            letter.userData.enabled = true;
-            officeState.letterRevealed = true;
-            pot.userData.enabled = false; 
-            exhaustFan.userData.enabled = false; 
+            pot.userData.enabled = false;
+            exhaustFan.userData.enabled = false;
             gasValve.userData.enabled = false;
+            officeState.letterRevealed = true;
 
-            letter.visible = true;
-            letter.userData.enabled = true;
-            letter.userData.prompt = "Press E to collect letter";
-            showHint("Something hidden inside… a piece of the past.", 7000);
+            let reward = null;
+            if (window.spawnHeartFragment) {
+                reward = window.spawnHeartFragment(2, {
+                    silent: true,
+                    prompt: "Read the letter before touching the heart fragment.",
+                    collectMessage: "Heart Fragment #3 collected.",
+                    onCollect: () => {
+                        officeState.heartCollected = true;
+                        officeState.heartReward = null;
+                        const followHint = "The fragment beats hot in your grasp. Take the chairman's key before he returns.";
+                        showHint(followHint, 9000, 'heart_collected');
+                    },
+                    letterOverrides: {
+                        prompt: "Press E to read the chairman's confession",
+                        revisitPrompt: "Press E to revisit the chairman's confession",
+                        onRead: () => {
+                            officeState.letterRead = true;
+                            const hint = "The truth is in your hands. Claim the heart fragment, then the key.";
+                            showHint(hint, 9000, 'letter_read');
+                            if (officeState.heartReward) {
+                                officeState.heartReward.userData.prompt = "Press E to collect Heart Fragment #3";
+                                officeState.heartReward.userData.collectMessage = "Heart Fragment #3 collected.";
+                                officeState.heartReward.userData.canCollect = null;
+                            }
+                        }
+                    }
+                });
+                playDramaticSound('heart_spawn');
+            } else if (window.spawnLetter) {
+                const letterOverlay = window.spawnLetter(2, {
+                    prompt: "Press E to read the chairman's confession",
+                    revisitPrompt: "Press E to revisit the chairman's confession",
+                    onRead: () => {
+                        officeState.letterRead = true;
+                        const hint = "The truth is in your hands. Claim the heart fragment, then the key.";
+                        showHint(hint, 9000, 'letter_read');
+                    }
+                });
+                reward = { heart: null, letter: letterOverlay };
+            }
 
-            // Force UI to ONLY show letter prompt
+            officeState.heartReward = reward ? reward.heart : null;
+            if (officeState.heartReward && !officeState.letterRead) {
+                officeState.heartReward.userData.canCollect = () => {
+                    const message = "Read the letter before touching the heart fragment.";
+                    showHint(message, 7000, 'heart_guard');
+                    return { allowed: false, message, duration: 7 };
+                };
+            }
+
+            showHint("Something hidden inside the pot stirs - the evidence, the heartbeat, everything they burned.", 9000, 'pot_opened');
             if (window.showCenterPrompt) {
-                window.showCenterPrompt("Press E to collect letter");
+                window.showCenterPrompt("Read the letter that survived the fire.", 6);
             }
         }
         return { duration: 4, message: "Opening cooking pot..." };
@@ -840,21 +796,16 @@ export function buildChairmanOffice(group, size, registerInteractable) {
         }
     };
 
-    group.userData.spawnHeart = function() {
-        if (window.spawnHeartFragment) {
-            window.spawnHeartFragment();
-            
-            // Transition to common room after heart collection
-            setTimeout(() => {
-                if (window.transitionToRoom) {
-                    window.transitionToRoom('commonRoom');
-                } else if (window.loadRoom) {
-                    window.loadRoom('commonRoom');
-                }
-            }, 3000);
-        }
-    };
-
     console.log("Chairman office built successfully");
 
 }
+
+
+
+
+
+
+
+
+
+

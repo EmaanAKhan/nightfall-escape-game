@@ -1,4 +1,4 @@
-import * as THREE from "three";
+﻿import * as THREE from "three";
 
 /**
  * PRIVATE CHAMBER - Room 4
@@ -198,25 +198,7 @@ export function buildDorm(group, size, registerInteractable) {
         const z = i < 2 ? -0.4 : 0.4;
         leg.position.set(-3 + x, -size.y / 2 + 0.4, 2 + z);
         group.add(leg);
-    }
-    
-    // Final letter (glowing)
-    const finalLetter = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.3, 0.4),
-        new THREE.MeshStandardMaterial({ 
-            color: 0xFFF8DC, 
-            emissive: 0xFFD700, 
-            emissiveIntensity: 0.3 
-        })
-    );
-    finalLetter.rotation.x = -Math.PI / 2;
-    finalLetter.position.set(-3, -size.y / 2 + 0.86, 2);
-    finalLetter.userData.type = "final_letter";
-    finalLetter.userData.prompt = "Press E to read the final letter";
-    finalLetter.visible = false;
-    group.add(finalLetter);
-    registerInteractable(finalLetter);
-    
+    }    
     // Cracked mirror
     const mirrorFrame = new THREE.Mesh(
         new THREE.BoxGeometry(2, 2.5, 0.1),
@@ -469,7 +451,43 @@ export function buildDorm(group, size, registerInteractable) {
                 
                 // Reveal final letter
                 setTimeout(() => {
-                    finalLetter.visible = true;
+                    if (window.spawnLetter) {
+                        const letterText = "He was right about everything. The bribes, the bodies, the silence. We burned the only man who told the truth.";
+                        window.spawnLetter(3, {
+                            prompt: "Press E to read the final letter",
+                            revisitPrompt: "Press E to revisit the final letter",
+                            onRead: () => {
+                                chamberState.letterRead = true;
+                                speakText(letterText);
+                                chest.userData.locked = false;
+                                chest.userData.prompt = "Press E to open the chest";
+                                chestBody.material.emissive = new THREE.Color(0xFFD700);
+                                chestBody.material.emissiveIntensity = 0.5;
+                                chestGlowLight.intensity = 2;
+                                mirror.material.emissiveIntensity = 0.3;
+                                chamberState.keyRevealed = true;
+
+                                const msg1 = "The chest unlocks. Your truth has been revealed.";
+                                const utterance1 = new SpeechSynthesisUtterance(msg1);
+                                utterance1.rate = 0.7;
+                                utterance1.pitch = 0.6;
+                                utterance1.volume = 0.9;
+                                utterance1.onend = () => {
+                                    const msg2 = "The mirror calls to you.";
+                                    const utterance2 = new SpeechSynthesisUtterance(msg2);
+                                    utterance2.rate = 0.7;
+                                    utterance2.pitch = 0.6;
+                                    utterance2.volume = 0.9;
+                                    window.speechSynthesis.speak(utterance2);
+                                    window.showCenterPrompt(msg2, 8);
+                                    mirrorInteraction.userData.prompt = "Press E. The mirror awaits...";
+                                };
+
+                                window.speechSynthesis.speak(utterance1);
+                                window.showCenterPrompt(msg1, 8);
+                            }
+                        });
+                    }
                     showHint("A letter appears revealing the truth of your death.", 8000);
                 }, 3000);
                 
@@ -493,66 +511,6 @@ export function buildDorm(group, size, registerInteractable) {
             return { duration: 2, message: "Taking the final key..." };
         }
         
-        if (type === "final_letter" && chamberState.heartMerged) {
-            chamberState.letterRead = true;
-            
-            const letterText = "They needed the property. The estate was worth more than your life. The poison was slipped into your evening tea by someone you trusted. Someone powerful. Someone who now walks free while you wander these halls. The deed was signed the day after your death. They took everything.";
-            speakText(letterText);
-            
-            const overlay = document.createElement('div');
-            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000;';
-            
-            const popup = document.createElement('div');
-            popup.style.cssText = 'background: #D2B48C; border: 3px solid #8B4513; padding: 30px; max-width: 600px;';
-            popup.innerHTML = '<div style="color: #000; font-family: serif; font-size: 18px; line-height: 1.8;"><strong>The Truth of Your Death</strong><br><br>They needed the property.<br>The estate was worth more than your life.<br>The poison was slipped into your evening tea by someone you trusted. Someone powerful.<br>Someone who now walks free while you wander these halls.<br>The deed was signed the day after your death.<br>They took everything.<br><br><span style="font-size: 14px; color: #666;">[Press Enter to close]</span></div>';
-            overlay.appendChild(popup);
-            document.body.appendChild(overlay);
-            
-            const closeHandler = (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.speechSynthesis.cancel();
-                    document.body.removeChild(overlay);
-                    document.removeEventListener('keydown', closeHandler);
-                    finalLetter.visible = false;
-                    
-                    // Unlock chest with glow
-                    chest.userData.locked = false;
-                    chest.userData.prompt = "Press E to open the chest";
-                    chestBody.material.emissive = new THREE.Color(0xFFD700);
-                    chestBody.material.emissiveIntensity = 0.5;
-                    chestGlowLight.intensity = 2;
-                    mirror.material.emissiveIntensity = 0.3;
-                    
-                    // First message
-                    const msg1 = "The chest unlocks. Your truth has been revealed.";
-                    const utterance1 = new SpeechSynthesisUtterance(msg1);
-                    utterance1.rate = 0.7;
-                    utterance1.pitch = 0.6;
-                    utterance1.volume = 0.9;
-                    
-                    utterance1.onend = () => {
-                        // Second message after first completes
-                        const msg2 = "The mirror calls to you.";
-                        const utterance2 = new SpeechSynthesisUtterance(msg2);
-                        utterance2.rate = 0.7;
-                        utterance2.pitch = 0.6;
-                        utterance2.volume = 0.9;
-                        window.speechSynthesis.speak(utterance2);
-                        window.showCenterPrompt(msg2, 8);
-                        mirrorInteraction.userData.prompt = "Press E. The mirror awaits...";
-                    };
-                    
-                    window.speechSynthesis.speak(utterance1);
-                    window.showCenterPrompt(msg1, 8);
-                }
-            };
-            document.addEventListener('keydown', closeHandler);
-            
-            return { duration: 0, message: '' };
-        }
-        
         if (type === "ornate_chest" && !chest.userData.locked) {
             // Open chest lid animation
             chestLid.rotation.x = -Math.PI / 2.5;
@@ -561,7 +519,7 @@ export function buildDorm(group, size, registerInteractable) {
             
             // Show ending choice message
             setTimeout(() => {
-                showHint("Decide your ending — redemption or rebirth through corruption — the mirror or the key?", 12000);
+                showHint("Decide your ending - redemption or rebirth through corruption - the mirror or the key?", 12000);
                 mirrorInteraction.userData.prompt = "Press E. The mirror awaits...";
             }, 3000);
             
@@ -592,3 +550,7 @@ export function buildDorm(group, size, registerInteractable) {
     
     console.log("Private Chamber built successfully");
 }
+
+
+
+

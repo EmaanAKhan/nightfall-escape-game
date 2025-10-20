@@ -8,8 +8,6 @@ import { buildBasement as buildBasementRoom1 } from "./rooms/hallway.js";
 import { buildLabs } from "./rooms/labs.js";
 import { buildChairmanOffice } from "./rooms/chairmanOffice.js";
 import { buildDorm } from "./rooms/dorm.js";
-import { buildCommonRoom } from "./rooms/commonRoom.js";
-import { buildBasement } from "./rooms/basement.js";
 
 /**
  * DOM references
@@ -337,12 +335,12 @@ document.addEventListener("mousemove", handlePointerMove);
  * Ghost Player Character
  */
 const ghostMaterial = new THREE.MeshStandardMaterial({
-    color: 0xB8C2C4,
+    color: 0xdbe8ff,
     transparent: true,
-    opacity: 0.45,
-    emissive: 0x9fb4ba,
-    emissiveIntensity: 0.18,
-    roughness: 0.78,
+    opacity: 0.38,
+    emissive: 0xb7d6ff,
+    emissiveIntensity: 0.22,
+    roughness: 0.4,
     metalness: 0.0,
     depthWrite: false,
     side: THREE.DoubleSide,
@@ -351,29 +349,68 @@ const ghostMaterial = new THREE.MeshStandardMaterial({
 const ghostPlayer = new THREE.Group();
 ghostPlayer.name = "GhostPlayer";
 
-const ghostBody = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.28, 1.3, 24), ghostMaterial);
-ghostBody.position.y = 0.65;
-ghostPlayer.add(ghostBody);
+const ghostTorso = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.16, 1.9, 24, 1, true),
+    ghostMaterial
+);
+ghostTorso.position.y = 0.95;
+ghostPlayer.add(ghostTorso);
 
-const ghostHem = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.35, 24, 1, true), ghostMaterial);
-ghostHem.position.y = 0.175;
-ghostHem.rotation.x = Math.PI;
-ghostPlayer.add(ghostHem);
-
-const ghostHead = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 24), ghostMaterial);
-ghostHead.position.y = 1.55;
+const ghostHead = new THREE.Mesh(new THREE.SphereGeometry(0.38, 24, 24), ghostMaterial);
+ghostHead.position.y = 1.75;
 ghostPlayer.add(ghostHead);
 
-const armGeometry = new THREE.CylinderGeometry(0.07, 0.07, 0.55, 12);
-const leftArm = new THREE.Mesh(armGeometry, ghostMaterial);
-leftArm.position.set(-0.38, 1.05, 0.05);
-leftArm.rotation.z = Math.PI / 5;
-ghostPlayer.add(leftArm);
+const ghostCrown = new THREE.Mesh(
+    new THREE.ConeGeometry(0.42, 0.55, 24, 1, true),
+    ghostMaterial
+);
+ghostCrown.position.y = 0.1;
+ghostCrown.rotation.x = Math.PI;
+ghostPlayer.add(ghostCrown);
 
-const rightArm = leftArm.clone();
-rightArm.position.x *= -1;
-rightArm.rotation.z *= -1;
-ghostPlayer.add(rightArm);
+const ghostTail = new THREE.Mesh(
+    new THREE.ConeGeometry(0.2, 0.65, 16, 1, true),
+    ghostMaterial
+);
+ghostTail.position.y = 0.05;
+ghostTail.rotation.x = Math.PI;
+ghostPlayer.add(ghostTail);
+
+const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0x10131c });
+const irisMaterial = new THREE.MeshBasicMaterial({ color: 0xe5f2ff });
+
+const leftEyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 16), irisMaterial);
+leftEyeWhite.position.set(-0.18, 1.82, 0.32);
+ghostPlayer.add(leftEyeWhite);
+
+const rightEyeWhite = leftEyeWhite.clone();
+rightEyeWhite.position.x *= -1;
+ghostPlayer.add(rightEyeWhite);
+
+const leftPupil = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), eyeMaterial);
+leftPupil.position.set(-0.18, 1.8, 0.4);
+ghostPlayer.add(leftPupil);
+
+const rightPupil = leftPupil.clone();
+rightPupil.position.x *= -1;
+ghostPlayer.add(rightPupil);
+
+const shoulderWrap = new THREE.Mesh(
+    new THREE.TorusGeometry(0.35, 0.08, 12, 32),
+    new THREE.MeshStandardMaterial({
+        color: 0xcfdfff,
+        transparent: true,
+        opacity: 0.25,
+        emissive: 0xcad9ff,
+        emissiveIntensity: 0.12,
+        roughness: 0.3,
+        metalness: 0,
+        depthWrite: false,
+    })
+);
+shoulderWrap.position.y = 1.2;
+shoulderWrap.rotation.x = Math.PI / 2;
+ghostPlayer.add(shoulderWrap);
 
 ghostPlayer.traverse((child) => {
     if (child.isMesh) {
@@ -458,6 +495,27 @@ const roomBlueprints = [
             question: "Three shadows march, yet only one is real. Which remains when the light is gone?",
             answer: "shadow",
         },
+        rewardAnchors: {
+            heart: {
+                x: -2.4,
+                y: 1.1,
+                z: 2.3,
+                relativeToFloor: true,
+                rotationY: Math.PI * 0.18,
+                bobAmplitude: 0.16,
+                bobSpeed: 1.6,
+                scale: 2.8,
+            },
+            letter: {
+                x: -2.9,
+                y: 0.06,
+                z: 2.0,
+                relativeToFloor: true,
+                rotationY: Math.PI / 5,
+                bobAmplitude: 0.04,
+                bobSpeed: 1.2,
+            },
+        },
         nextRoomIndex: 1,
     },
     {
@@ -469,16 +527,58 @@ const roomBlueprints = [
             question: "Glass eyes watch in rows. One blinks and lies. Which one hides the truth?",
             answer: "middle",
         },
+        rewardAnchors: {
+            heart: {
+                x: 2.3,
+                y: 1.15,
+                z: -2.2,
+                relativeToFloor: true,
+                rotationY: -Math.PI / 3.5,
+                bobAmplitude: 0.14,
+                bobSpeed: 1.7,
+                scale: 2.9,
+            },
+            letter: {
+                x: 3.1,
+                y: 0.08,
+                z: -2.6,
+                relativeToFloor: true,
+                rotationY: -Math.PI / 6,
+                bobAmplitude: 0.05,
+                bobSpeed: 1.3,
+            },
+        },
         nextRoomIndex: 2,
     },
     {
-        name: "Chairman’s Office",
+        name: "Chairman's Office",
         position: new THREE.Vector3(0, 0, -30),
         keyPosition: new THREE.Vector3(-1.6, -defaultRoomSize.y / 2 + 0.55, 3.1),
         riddlePosition: new THREE.Vector3(2.3, -defaultRoomSize.y / 2 + 0.55, -2.2),
         riddle: {
             question: "Five portraits whisper dates. Only one wears a crimson tie. What color is the truth?",
             answer: "crimson",
+        },
+        rewardAnchors: {
+            heart: {
+                x: -1.9,
+                y: 1.2,
+                z: 2.4,
+                relativeToFloor: true,
+                rotationY: Math.PI * 0.55,
+                bobAmplitude: 0.15,
+                bobSpeed: 1.6,
+                scale: 3.0,
+            },
+            letter: {
+                x: -2.2,
+                y: 0.08,
+                z: 2.1,
+                relativeToFloor: true,
+                rotationY: Math.PI / 4,
+                bobAmplitude: 0.05,
+                bobSpeed: 1.25,
+            },
         },
         nextRoomIndex: 3,
     },
@@ -491,27 +591,26 @@ const roomBlueprints = [
             question: "Four beds breathe slowly. One is still and cold. Which number will not wake?",
             answer: "four",
         },
-        nextRoomIndex: 4,
-    },
-    {
-        name: "Common Room",
-        position: new THREE.Vector3(0, 0, -60),
-        keyPosition: new THREE.Vector3(-1.9, -defaultRoomSize.y / 2 + 0.55, -2.4),
-        riddlePosition: new THREE.Vector3(2.1, -defaultRoomSize.y / 2 + 0.55, 2.1),
-        riddle: {
-            question: "Three bottles stand upright. One lies flat—where is truth?",
-            answer: "floor",
-        },
-        nextRoomIndex: 5,
-    },
-    {
-        name: "Basement",
-        position: new THREE.Vector3(0, 0, -75),
-        keyPosition: new THREE.Vector3(0, -defaultRoomSize.y / 2 + 0.55, 0),
-        riddlePosition: new THREE.Vector3(0, -defaultRoomSize.y / 2 + 0.55, -2.4),
-        riddle: {
-            question: "The last door hums with quiet dread. What word will still it?",
-            answer: "silence",
+        rewardAnchors: {
+            heart: {
+                x: 1.9,
+                y: 1.1,
+                z: -1.3,
+                relativeToFloor: true,
+                rotationY: -Math.PI / 2.4,
+                bobAmplitude: 0.16,
+                bobSpeed: 1.65,
+                scale: 3.2,
+            },
+            letter: {
+                x: 2.4,
+                y: 0.08,
+                z: -1.5,
+                relativeToFloor: true,
+                rotationY: -Math.PI / 5,
+                bobAmplitude: 0.05,
+                bobSpeed: 1.3,
+            },
         },
         nextRoomIndex: null,
     },
@@ -713,45 +812,281 @@ function createGlowSprite(color = 0x355fff, scaleX = 1.4, scaleY = 3.2) {
 }
 
 function registerInteractable(object3d) {
-    interactables.push(object3d);
+    if (!object3d) {
+        return;
+    }
+    if (!interactables.includes(object3d)) {
+        interactables.push(object3d);
+    }
 }
 
-window.spawnHeartFragment = function spawnHeartFragment() {
-    const currentRoom = roomsData[state.activeRoomIndex];
-    if (!currentRoom) return;
-    
+function unregisterInteractable(object3d) {
+    const index = interactables.indexOf(object3d);
+    if (index !== -1) {
+        interactables.splice(index, 1);
+    }
+}
+
+// Narrative letters for each room
+const letterContent = {
+    0: {
+        title: "Letter #1 - Ashes",
+        text: "&ldquo;They say the house still smells of smoke.<br><br>No one ever cleaned the soot beneath the tiles &mdash; it seeps up on rainy nights.<br><br>The man who came asking questions walked these halls with a recorder and a notebook.<br><br>He said the truth was buried here.<br><br>Now all that's buried are his ashes.&rdquo;"
+    },
+    1: {
+        title: "Letter #2 - Evidence",
+        text: "&ldquo;I saw the officer hand her a brown envelope &mdash; police seal still unbroken.<br><br>They said the journalist had been warned. 'He should've known when to stop digging,' they laughed.<br><br>She kept the files in the cabinet behind the safe, but the labels were gone &mdash;<br><br>replaced with blank folders marked only in ash.&rdquo;"
+    },
+    2: {
+        title: "Letter #3 - The Setup",
+        text: "&ldquo;The chief signed off the inspection reports. Everything looked clean on paper.<br><br>But I saw the ledger &mdash; false names, shell donations, missing bodies.<br><br>When the reporter came back that night, they said it was time to 'shut the story down for good.'<br><br>The chef lit the fire. The officer locked the door.&rdquo;"
+    },
+    3: {
+        title: "Letter #4 - The Truth",
+        text: "&ldquo;He was right about everything.<br><br>The bribes, the bodies, the silence.<br><br>We burned the only man who told the truth.&rdquo;"
+    }
+};
+
+function createBurntLetterTexture() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#f6e2bc";
+    ctx.fillRect(0, 0, 512, 512);
+
+    const vignette = ctx.createRadialGradient(256, 256, 120, 256, 256, 250);
+    vignette.addColorStop(0, "#f9e4c4");
+    vignette.addColorStop(0.55, "#efcb98");
+    vignette.addColorStop(0.82, "#b57945");
+    vignette.addColorStop(1, "#351709");
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, 512, 512);
+    ctx.globalAlpha = 1;
+
+    ctx.globalCompositeOperation = "multiply";
+    for (let i = 0; i < 28; i++) {
+        const radius = 20 + Math.random() * 90;
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const scorch = ctx.createRadialGradient(x, y, radius * 0.15, x, y, radius);
+        scorch.addColorStop(0, "rgba(255, 235, 210, 0.25)");
+        scorch.addColorStop(0.5, "rgba(215, 135, 70, 0.28)");
+        scorch.addColorStop(1, "rgba(40, 15, 5, 0.78)");
+        ctx.fillStyle = scorch;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.globalCompositeOperation = "destination-out";
+    for (let i = 0; i < 18; i++) {
+        const radius = 10 + Math.random() * 26;
+        const angle = Math.random() * Math.PI * 2;
+        const ringRadius = 230 + Math.random() * 40;
+        const x = 256 + Math.cos(angle) * ringRadius;
+        const y = 256 + Math.sin(angle) * ringRadius;
+        const fade = ctx.createRadialGradient(x, y, radius * 0.2, x, y, radius);
+        fade.addColorStop(0, "rgba(0, 0, 0, 0.02)");
+        fade.addColorStop(1, "rgba(0, 0, 0, 0.85)");
+        ctx.fillStyle = fade;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalCompositeOperation = "source-over";
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.needsUpdate = true;
+    return texture;
+}
+
+function resolveRewardAnchor(room, defaultAnchor, overrideAnchor = {}) {
+    const merged = Object.assign({}, defaultAnchor || {}, overrideAnchor || {});
+    const relativeToFloor = merged.relativeToFloor !== false;
+    const baseY = relativeToFloor ? -room.size.y / 2 : 0;
+    return {
+        position: new THREE.Vector3(
+            typeof merged.x === "number" ? merged.x : 1.4,
+            baseY + (typeof merged.y === "number" ? merged.y : 0.05),
+            typeof merged.z === "number" ? merged.z : 1.4
+        ),
+        rotationY: typeof merged.rotationY === "number" ? merged.rotationY : undefined,
+        bobAmplitude: typeof merged.bobAmplitude === "number" ? merged.bobAmplitude : undefined,
+        bobSpeed: typeof merged.bobSpeed === "number" ? merged.bobSpeed : undefined,
+        scale: typeof merged.scale === "number" ? merged.scale : undefined
+    };
+}
+
+window.spawnLetter = function spawnLetter(roomIndex, overrides = {}) {
+    if (typeof roomIndex !== "number") {
+        roomIndex = state.activeRoomIndex;
+    }
+    const room = roomsData[roomIndex];
+    if (!room) {
+        return null;
+    }
+
+    if (room.letterObject) {
+        unregisterInteractable(room.letterObject);
+        room.group.remove(room.letterObject);
+        room.letterObject = null;
+    }
+
+    const anchor = resolveRewardAnchor(room, room.rewardAnchors && room.rewardAnchors.letter, overrides.anchor);
+    const letterGroup = new THREE.Group();
+
+    const letterTexture = createBurntLetterTexture();
+    const letterMaterial = new THREE.MeshStandardMaterial({
+        map: letterTexture,
+        transparent: true,
+        roughness: 0.92,
+        metalness: 0.08,
+        color: 0xffffff,
+        emissive: new THREE.Color(0x2d150a),
+        emissiveIntensity: 0.08,
+        side: THREE.DoubleSide
+    });
+
+    const letterPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.82), letterMaterial);
+    letterPlane.rotation.x = -Math.PI / 2 + 0.06;
+    letterGroup.add(letterPlane);
+
+    const charEdgeMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1d0c04,
+        transparent: true,
+        opacity: 0.32,
+        roughness: 1,
+        metalness: 0,
+        side: THREE.DoubleSide
+    });
+    const charEdge = new THREE.Mesh(new THREE.PlaneGeometry(0.63, 0.85), charEdgeMaterial);
+    charEdge.rotation.x = letterPlane.rotation.x;
+    charEdge.position.y = 0.001;
+    letterGroup.add(charEdge);
+
+    const emberLight = new THREE.PointLight(0xff6a2c, 0.35, 1.4);
+    emberLight.position.set(0.05, 0.04, 0.05);
+    letterGroup.add(emberLight);
+
+    letterGroup.position.copy(anchor.position);
+    const rotationY = overrides.rotationY ?? anchor.rotationY ?? (Math.random() * 0.25 - 0.12);
+    letterGroup.rotation.y = rotationY;
+
+    letterGroup.visible = overrides.visible !== undefined ? overrides.visible : true;
+    letterGroup.userData.type = "letter_read";
+    letterGroup.userData.roomIndex = roomIndex;
+    letterGroup.userData.prompt = overrides.prompt || "Press E to read the letter";
+    letterGroup.userData.revisitPrompt = overrides.revisitPrompt || "Press E to revisit the letter";
+    letterGroup.userData.enabled = overrides.enabled !== undefined ? overrides.enabled : true;
+    letterGroup.userData.disabledMessage = overrides.disabledMessage || null;
+    letterGroup.userData.range = overrides.range || 2.6;
+    letterGroup.userData.onRead = typeof overrides.onRead === "function" ? overrides.onRead : null;
+
+    const baseY = anchor.position.y;
+    let elapsed = Math.random() * Math.PI * 2;
+    const bobAmplitude = overrides.bobAmplitude ?? anchor.bobAmplitude ?? 0.05;
+    const bobSpeed = overrides.bobSpeed ?? anchor.bobSpeed ?? 1.4;
+    letterGroup.userData.updateLetter = function updateLetter(deltaTime) {
+        elapsed += deltaTime * bobSpeed;
+        letterGroup.position.y = baseY + Math.sin(elapsed) * bobAmplitude;
+        letterGroup.rotation.z = Math.sin(elapsed * 0.4) * 0.02;
+    };
+
+    room.group.add(letterGroup);
+    registerInteractable(letterGroup);
+    room.letterObject = letterGroup;
+    return letterGroup;
+};
+
+window.spawnHeartFragment = function spawnHeartFragment(roomIndex, overrides = {}) {
+    if (typeof roomIndex !== "number") {
+        roomIndex = state.activeRoomIndex;
+    }
+    const room = roomsData[roomIndex];
+    if (!room) {
+        return null;
+    }
+
+    if (room.heartObject) {
+        unregisterInteractable(room.heartObject);
+        room.group.remove(room.heartObject);
+        room.heartObject = null;
+    }
+
+    const anchor = resolveRewardAnchor(room, room.rewardAnchors && room.rewardAnchors.heart, overrides.anchor);
+
     const heartShape = new THREE.Shape();
     heartShape.moveTo(0, 0.2);
     heartShape.bezierCurveTo(0, 0.3, -0.15, 0.3, -0.15, 0.15);
     heartShape.bezierCurveTo(-0.15, 0, -0.15, -0.1, 0, -0.3);
     heartShape.bezierCurveTo(0.15, -0.1, 0.15, 0, 0.15, 0.15);
     heartShape.bezierCurveTo(0.15, 0.3, 0, 0.3, 0, 0.2);
-    
-    const extrudeSettings = { depth: 0.1, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3 };
+
+    const extrudeSettings = {
+        depth: 0.1,
+        bevelEnabled: true,
+        bevelThickness: 0.02,
+        bevelSize: 0.02,
+        bevelSegments: 3
+    };
+
     const heartGeometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
-    
-    const heart = new THREE.Mesh(
-        heartGeometry,
-        new THREE.MeshStandardMaterial({ 
-            color: 0xFF0000, 
-            emissive: 0xFF0000, 
-            emissiveIntensity: 0.8 
-        })
-    );
-    heart.position.set(0, -currentRoom.size.y / 2 + 1.5, 0);
-    heart.rotation.y = Math.PI;
-    heart.scale.set(3, 3, 3);
+    const heartMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff3b2f,
+        emissive: 0xff3b2f,
+        emissiveIntensity: 0.85,
+        roughness: 0.35,
+        metalness: 0.2
+    });
+    const heart = new THREE.Mesh(heartGeometry, heartMaterial);
+    heart.castShadow = true;
+    heart.position.copy(anchor.position);
+    heart.rotation.y = overrides.rotationY ?? anchor.rotationY ?? Math.PI;
+    const scale = overrides.scale ?? anchor.scale ?? 3;
+    heart.scale.set(scale, scale, scale);
+    heart.visible = overrides.visible !== undefined ? overrides.visible : true;
     heart.userData.type = "heart_fragment";
-    heart.userData.prompt = "Press E to collect Heart Fragment";
-    currentRoom.group.add(heart);
+    heart.userData.roomIndex = roomIndex;
+    heart.userData.prompt = overrides.prompt || "Press E to collect Heart Fragment";
+    heart.userData.revisitPrompt = overrides.revisitPrompt || heart.userData.prompt;
+    heart.userData.enabled = overrides.enabled !== undefined ? overrides.enabled : true;
+    heart.userData.disabledMessage = overrides.disabledMessage || null;
+    heart.userData.range = overrides.range || 2.8;
+    heart.userData.collectMessage = overrides.collectMessage || null;
+    heart.userData.onCollect = typeof overrides.onCollect === "function" ? overrides.onCollect : null;
+    heart.userData.canCollect = typeof overrides.canCollect === "function" ? overrides.canCollect : null;
+
+    const baseY = anchor.position.y;
+    let pulseTime = Math.random() * Math.PI * 2;
+    const bobAmplitude = overrides.bobAmplitude ?? anchor.bobAmplitude ?? 0.12;
+    const bobSpeed = overrides.bobSpeed ?? anchor.bobSpeed ?? 1.8;
+    heart.userData.updateHeart = function updateHeart(deltaTime) {
+        pulseTime += deltaTime * bobSpeed;
+        heart.position.y = baseY + Math.sin(pulseTime) * bobAmplitude;
+        heart.rotation.y += deltaTime * 0.6;
+    };
+
+    const glow = new THREE.PointLight(0xff5a30, 1.15, 4.2);
+    glow.position.set(0, 0.25, 0);
+    heart.add(glow);
+
+    room.group.add(heart);
     registerInteractable(heart);
-    
-    const heartLight = new THREE.PointLight(0xFF0000, 1, 5);
-    heartLight.position.set(0, 0.2, 0);
-    heart.add(heartLight);
-    
-    showCenterPrompt("A Heart Fragment appears!", 3);
-}
+    room.heartObject = heart;
+
+    if (!overrides.silent) {
+        showCenterPrompt("A Heart Fragment appears!", 3);
+    }
+
+    const letterOverrides = overrides.letterOverrides || {};
+    const letter = window.spawnLetter ? window.spawnLetter(roomIndex, letterOverrides) : null;
+    return { heart, letter };
+};
 
 function transitionToRoom(targetIndex, showTitle = true) {
     if (typeof targetIndex !== "number") {
@@ -773,6 +1108,7 @@ function transitionToRoom(targetIndex, showTitle = true) {
     updatePlayerColliderFromState();
     syncPlayerTransforms();
     state.activeRoomIndex = targetIndex;
+    updateChecklist(targetIndex);
     if (showTitle) {
         showCenterPrompt(nextRoom.name, 3);
     }
@@ -800,7 +1136,52 @@ window.transitionToRoom = transitionToRoomByName;
 window.changeRoom = transitionToRoomByName;
 window.state = state;
 
-// Checklist functionality
+// Dynamic Checklist System
+const roomObjectives = {
+    0: [ // Hallway
+        { id: 'light-candles', text: 'Light all 3 candles' },
+        { id: 'solve-riddle', text: 'Solve the riddle' },
+        { id: 'find-key', text: 'Find the key' },
+        { id: 'collect-heart', text: 'Collect Heart Fragment' },
+        { id: 'read-letter', text: 'Read the letter' }
+    ],
+    1: [ // Labs
+        { id: 'find-key', text: 'Find the key' },
+        { id: 'collect-heart', text: 'Collect Heart Fragment' },
+        { id: 'read-letter', text: 'Read the letter' }
+    ],
+    2: [ // Chairman's Office
+        { id: 'find-key', text: 'Find the key' },
+        { id: 'collect-heart', text: 'Collect Heart Fragment' },
+        { id: 'read-letter', text: 'Read the letter' }
+    ],
+    3: [ // Dorm (Final Room)
+        { id: 'find-key', text: 'Find the key' },
+        { id: 'collect-heart', text: 'Collect Heart Fragment' },
+        { id: 'read-letter', text: 'Read the letter' }
+    ]
+};
+
+function updateChecklist(roomIndex) {
+    const checklist = document.getElementById('checklist');
+    if (!checklist) return;
+    
+    const objectives = roomObjectives[roomIndex] || [];
+    
+    // Clear existing items
+    const existingItems = checklist.querySelectorAll('.checklist-item');
+    existingItems.forEach(item => item.remove());
+    
+    // Add new objectives
+    objectives.forEach(objective => {
+        const item = document.createElement('div');
+        item.className = 'checklist-item';
+        item.id = objective.id;
+        item.innerHTML = `<span class="checkbox">☐</span> ${objective.text}`;
+        checklist.appendChild(item);
+    });
+}
+
 window.markChecklistItem = function(itemId) {
     const item = document.getElementById(itemId);
     if (item && !item.classList.contains('completed')) {
@@ -811,6 +1192,8 @@ window.markChecklistItem = function(itemId) {
         }
     }
 };
+
+window.updateChecklist = updateChecklist;
 
 function buildRoom(blueprint, index) {
     const group = new THREE.Group();
@@ -1147,10 +1530,6 @@ function buildRoom(blueprint, index) {
         buildChairmanOffice(group, size, registerInteractable);
     } else if (index === 3) {
         buildDorm(group, size, registerInteractable);
-    } else if (index === 4) {
-        buildCommonRoom(group, size, registerInteractable);
-    } else if (index === 5) {
-        buildBasement(group, size, registerInteractable);
     }
 
     // OLD CODE - keeping for reference, will be removed
@@ -1466,6 +1845,17 @@ function buildRoom(blueprint, index) {
         key.userData.active = true;
     }
 
+    const rewardAnchors = blueprint.rewardAnchors
+        ? {
+              heart: blueprint.rewardAnchors.heart
+                  ? { ...blueprint.rewardAnchors.heart }
+                  : undefined,
+              letter: blueprint.rewardAnchors.letter
+                  ? { ...blueprint.rewardAnchors.letter }
+                  : undefined,
+          }
+        : null;
+
     const roomData = {
         name: blueprint.name,
         index,
@@ -1475,7 +1865,9 @@ function buildRoom(blueprint, index) {
         floorY,
         door: doorPivot,
         key,
-
+        rewardAnchors,
+        heartObject: null,
+        letterObject: null,
         visited: index === 0,
     };
 
@@ -1753,10 +2145,102 @@ function handleInteraction() {
         openRiddleOverlay(interaction);
 
     } else if (type === "letter_read") {
-        const currentRoom = roomsData[state.activeRoomIndex];
-        if (currentRoom && currentRoom.group.userData.interact) {
-            currentRoom.group.userData.interact(interaction);
+        if (interaction.userData.enabled === false) {
+            const disabledMessage =
+                interaction.userData.disabledMessage || "The letter curls away from your touch.";
+            showCenterPrompt(disabledMessage, 3);
+            return;
         }
+        const roomIndex = interaction.userData.roomIndex;
+        const content = letterContent[roomIndex];
+        if (!content) return;
+        
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 20% 10%, rgba(36, 22, 15, 0.35) 0%, rgba(8, 5, 3, 0.9) 65%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: pointer;
+            backdrop-filter: blur(2px);
+        `;
+
+        const letterShell = document.createElement('div');
+        letterShell.style.cssText = `
+            position: relative;
+            max-width: 720px;
+            padding: 56px 64px;
+            background: linear-gradient(145deg, rgba(244, 215, 174, 0.95) 0%, rgba(230, 187, 132, 0.92) 55%, rgba(145, 87, 42, 0.88) 100%);
+            border: 1px solid rgba(56, 28, 14, 0.9);
+            box-shadow: 0 52px 86px rgba(0, 0, 0, 0.72), inset 0 0 68px rgba(0, 0, 0, 0.35);
+            color: #2b1202;
+            font-family: "Garamond","Georgia","Times New Roman",serif;
+            line-height: 1.85;
+            letter-spacing: 0.02em;
+            text-align: left;
+        `;
+
+        const scorchLayer = document.createElement('div');
+        scorchLayer.style.cssText = `
+            position: absolute;
+            inset: -8% -6%;
+            background:
+                radial-gradient(circle at 12% 8%, rgba(255, 236, 205, 0.32) 0%, rgba(120, 63, 20, 0.0) 45%, rgba(26, 12, 6, 0.78) 100%),
+                radial-gradient(circle at 88% 12%, rgba(255, 230, 200, 0.35) 0%, rgba(120, 63, 20, 0.0) 50%, rgba(26, 12, 6, 0.78) 100%),
+                radial-gradient(circle at 50% 115%, rgba(255, 204, 160, 0.15) 0%, rgba(30, 12, 5, 0.85) 75%);
+            opacity: 0.72;
+            mix-blend-mode: multiply;
+            pointer-events: none;
+        `;
+        letterShell.appendChild(scorchLayer);
+
+        const fiberLayer = document.createElement('div');
+        fiberLayer.style.cssText = `
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(90deg, rgba(120, 90, 60, 0.08) 0px, rgba(120, 90, 60, 0.08) 2px, transparent 2px, transparent 4px);
+            opacity: 0.35;
+            pointer-events: none;
+        `;
+        letterShell.appendChild(fiberLayer);
+
+        const contentWrap = document.createElement('div');
+        contentWrap.style.cssText = `
+            position: relative;
+        `;
+        contentWrap.innerHTML = `
+            <h2 style="margin: 0 0 24px; font-size: 2.05rem; color: #532911; letter-spacing: 0.08em; text-transform: uppercase;">${content.title}</h2>
+            <div style="font-size: 1.15rem; color: #2b1202;">${content.text}</div>
+            <div style="margin-top: 32px; font-size: 0.8rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(54, 27, 17, 0.82); text-align: center;">Click anywhere to close</div>
+        `;
+        letterShell.appendChild(contentWrap);
+
+        overlay.appendChild(letterShell);
+        document.body.appendChild(overlay);
+
+        const closeOverlay = () => {
+            if (overlay.parentNode) {
+                document.body.removeChild(overlay);
+            }
+            if (window.markChecklistItem && !interaction.userData.hasBeenRead) {
+                window.markChecklistItem('read-letter');
+            }
+            if (!interaction.userData.hasBeenRead && typeof interaction.userData.onRead === "function") {
+                try {
+                    interaction.userData.onRead(interaction);
+                } catch (error) {
+                    console.error("Letter onRead callback failed:", error);
+                }
+            }
+            interaction.userData.hasBeenRead = true;
+            interaction.userData.prompt =
+                interaction.userData.revisitPrompt || "Press E to revisit the letter";
+        };
+
+        overlay.addEventListener('click', closeOverlay, { once: true });
     } else if (type && type.startsWith("possess_")) {
         if (!interaction.userData.enabled && interaction.userData.enabled !== undefined) {
             showCenterPrompt(interaction.userData.prompt || "Not available yet", 2);
@@ -1781,11 +2265,55 @@ function handleInteraction() {
             }
         }
     } else if (type === "heart_fragment") {
-        showCenterPrompt("Heart Fragment collected! Transitioning...", 3);
-        interaction.visible = false;
-        setTimeout(() => {
-            transitionToRoom(Math.min(state.activeRoomIndex + 1, roomsData.length - 1));
-        }, 3000);
+        if (interaction.userData.enabled === false) {
+            const disabledMessage =
+                interaction.userData.disabledMessage || "The fragment recoils from your touch.";
+            showCenterPrompt(disabledMessage, 3);
+            return;
+        }
+
+        if (typeof interaction.userData.canCollect === "function") {
+            let guardResult;
+            try {
+                guardResult = interaction.userData.canCollect(interaction);
+            } catch (error) {
+                console.error("Heart fragment guard threw:", error);
+                guardResult = { allowed: false, message: "Something prevents you from taking it." };
+            }
+            if (guardResult === false) {
+                return;
+            }
+            if (guardResult && typeof guardResult === "object" && guardResult.allowed === false) {
+                if (guardResult.message) {
+                    showCenterPrompt(guardResult.message, guardResult.duration || 3);
+                }
+                return;
+            }
+        }
+
+        if (window.markChecklistItem) {
+            window.markChecklistItem('collect-heart');
+        }
+        const collectMessage =
+            interaction.userData.collectMessage || "Heart Fragment collected.";
+        showCenterPrompt(collectMessage, 3);
+        unregisterInteractable(interaction);
+        const activeRoom = roomsData[state.activeRoomIndex];
+        if (activeRoom && activeRoom.heartObject === interaction) {
+            activeRoom.heartObject = null;
+        }
+        if (interaction.parent) {
+            interaction.parent.remove(interaction);
+        } else {
+            interaction.visible = false;
+        }
+        if (typeof interaction.userData.onCollect === "function") {
+            try {
+                interaction.userData.onCollect(interaction);
+            } catch (error) {
+                console.error("Heart fragment onCollect failed:", error);
+            }
+        }
     } else if (type === "heart_relic" || type === "final_key" || type === "final_letter" || type === "ornate_chest" || type === "cracked_mirror") {
         const currentRoom = roomsData[state.activeRoomIndex];
         if (currentRoom && currentRoom.group.userData.interact) {
@@ -1858,6 +2386,9 @@ function startGameAtRoom(roomIndex) {
         
         // Mark room as visited
         targetRoom.visited = true;
+        
+        // Update checklist for this room
+        updateChecklist(roomIndex);
         
         // Show room name
         showCenterPrompt(targetRoom.name, 3);
@@ -2151,6 +2682,7 @@ function enforceDoorLogic(playerHeadPosition) {
                 if (state.activeRoomIndex !== data.nextRoomIndex) {
                     const previousRoomIndex = state.activeRoomIndex;
                     state.activeRoomIndex = data.nextRoomIndex;
+                    updateChecklist(state.activeRoomIndex);
                     if (!roomsData[state.activeRoomIndex].visited) {
                         roomsData[state.activeRoomIndex].visited = true;
                         showCenterPrompt(roomsData[state.activeRoomIndex].name, 3);
@@ -2273,8 +2805,8 @@ function tick() {
             if (currentRoom.group.userData.updateButler) {
                 currentRoom.group.userData.updateButler(deltaTime);
             }
-            if (currentRoom.group.userData.updateMaid) {
-                currentRoom.group.userData.updateMaid(deltaTime, playerState.position);
+            if (currentRoom.group.userData.updateLibrarian) {
+                currentRoom.group.userData.updateLibrarian(deltaTime, playerState.position);
             }
             if (currentRoom.group.userData.updateChandeliers) {
                 currentRoom.group.userData.updateChandeliers(deltaTime, playerState.position);
@@ -2288,6 +2820,19 @@ function tick() {
             if (currentRoom.group.userData.updateDorm) {
                 currentRoom.group.userData.updateDorm(deltaTime);
             }
+            
+            // Update reward animations
+            currentRoom.group.traverse((child) => {
+                if (!child.userData) {
+                    return;
+                }
+                if (child.userData.updateLetter) {
+                    child.userData.updateLetter(deltaTime);
+                }
+                if (child.userData.updateHeart) {
+                    child.userData.updateHeart(deltaTime);
+                }
+            });
         }
     }
 
@@ -2298,3 +2843,5 @@ function tick() {
 updateBatteryUI();
 updateTimerUI();
 tick();
+
+
